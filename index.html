@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Bandeja de entrada del Ejecutivo Financiero de EfectiBank"
+    />
+    <title>EfectiBank | Bandeja de Entrada</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header id="inboxHeader" class="app-header">
+      <div class="title-group">
+        <button class="menu-button" type="button" aria-label="Abrir menú">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div>
+          <p class="brand-name">EfectiBank</p>
+          <h1>Bandeja de Entrada</h1>
+        </div>
+      </div>
+
+      <button id="newRequestButton" class="new-request-button" type="button">
+        <span aria-hidden="true">＋</span>
+        Nueva solicitud
+      </button>
+    </header>
+
+    <main id="inboxView" class="page-shell">
+      <section class="card search-card" aria-labelledby="search-heading">
+        <h2 id="search-heading">BÚSQUEDA</h2>
+
+        <form id="filtersForm" class="filter-grid" autocomplete="off">
+          <div class="field">
+            <label for="requestFilter">SOLICITUD</label>
+            <input
+              id="requestFilter"
+              name="request"
+              type="text"
+              placeholder="Ej. EFE001"
+            />
+          </div>
+
+          <div class="field">
+            <label for="documentFilter">N° DOCUMENTO</label>
+            <input
+              id="documentFilter"
+              name="document"
+              type="text"
+              inputmode="numeric"
+              placeholder="Ej. 12345678"
+            />
+          </div>
+
+          <div class="field">
+            <label for="nameFilter">NOMBRES</label>
+            <input
+              id="nameFilter"
+              name="name"
+              type="text"
+              placeholder="Ingrese nombres"
+            />
+          </div>
+
+          <div class="field">
+            <label for="branchFilter">SUCURSAL</label>
+            <select id="branchFilter" name="branch">
+              <option value="">Seleccionar</option>
+              <option value="La Molina">La Molina</option>
+              <option value="Puruchuco">Puruchuco</option>
+              <option value="San Miguel">San Miguel</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="stageFilter">ETAPA</label>
+            <select id="stageFilter" name="stage">
+              <option value="">Seleccionar</option>
+              <option value="SIMULACIÓN">Simulación</option>
+              <option value="SOLICITUD">Solicitud</option>
+              <option value="RIESGOS">Riesgos</option>
+              <option value="DOCUMENTARIA">Documentaria</option>
+              <option value="FIRMAS">Firmas</option>
+              <option value="OPERACIONES">Operaciones</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="statusFilter">ESTADO</label>
+            <select id="statusFilter" name="status">
+              <option value="">Seleccionar</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="APROBADO">Aprobado</option>
+              <option value="OBSERVADO">Observado</option>
+              <option value="RECHAZADO">Rechazado</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="dateFromFilter">FECHA DESDE</label>
+            <input id="dateFromFilter" name="dateFrom" type="date" />
+          </div>
+
+          <div class="field">
+            <label for="dateToFilter">FECHA HASTA</label>
+            <input id="dateToFilter" name="dateTo" type="date" />
+          </div>
+
+          <button id="clearFilters" class="clear-button" type="reset">
+            Limpiar
+          </button>
+        </form>
+      </section>
+
+      <section class="card results-card" aria-labelledby="results-heading">
+        <div class="results-header">
+          <div>
+            <h2 id="results-heading">Solicitudes</h2>
+            <p class="results-copy">
+              <span id="resultCount">0</span>
+              <span id="resultLabel">resultados</span>
+            </p>
+          </div>
+
+          <p class="total-copy" aria-live="polite">
+            <span class="total-dot" aria-hidden="true"></span>
+            TOTAL <strong id="totalCount">0</strong>
+          </p>
+        </div>
+
+        <div class="table-scroll" tabindex="0" aria-label="Tabla desplazable de solicitudes">
+          <table>
+            <caption class="sr-only">
+              Solicitudes de crédito vehicular asignadas al Ejecutivo Financiero
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">SOLICITUD <span aria-hidden="true">⋮</span></th>
+                <th scope="col">N° DOCUMENTO <span aria-hidden="true">⋮</span></th>
+                <th scope="col">NOMBRES <span aria-hidden="true">⋮</span></th>
+                <th scope="col">SUCURSAL <span aria-hidden="true">⋮</span></th>
+                <th scope="col">FECHA <span aria-hidden="true">⋮</span></th>
+                <th scope="col">ETAPA <span aria-hidden="true">⋮</span></th>
+                <th scope="col">ESTADO <span aria-hidden="true">⋮</span></th>
+                <th scope="col">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="requestsBody"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination" aria-label="Paginación">
+          <button type="button" disabled aria-label="Página anterior">‹</button>
+          <span>Página 1 de 1</span>
+          <button type="button" disabled aria-label="Página siguiente">›</button>
+        </div>
+      </section>
+    </main>
+
+    <main id="simulationView" class="simulation-view" hidden>
+      <div class="simulation-heading">
+        <div>
+          <p class="brand-name">EfectiBank</p>
+          <h1>Simulación</h1>
+          <p>Registra los datos mínimos del cliente para iniciar la evaluación comercial.</p>
+        </div>
+        <button id="backToInboxButton" class="back-button" type="button">
+          <span aria-hidden="true">←</span>
+          Regresar
+        </button>
+      </div>
+
+      <form id="simulationForm" class="card simulation-card" autocomplete="off">
+        <div class="simulation-card-top">
+          <div class="simulation-copy">
+            <h2>Datos de simulación</h2>
+            <p>Los campos marcados con <span>*</span> son obligatorios.</p>
+          </div>
+
+          <div class="simulation-selects">
+            <div class="field simulation-field">
+              <label for="dealerSelect">Concesionario <span>*</span></label>
+              <select id="dealerSelect" name="dealer" required>
+                <option value="" selected>Seleccionar</option>
+                <option value="Hyundai">Hyundai</option>
+                <option value="Kia">Kia</option>
+                <option value="Nissan">Nissan</option>
+                <option value="Toyota">Toyota</option>
+              </select>
+            </div>
+
+            <div class="field simulation-field">
+              <label for="simulationBranchSelect">Sucursal <span>*</span></label>
+              <select id="simulationBranchSelect" name="simulationBranch" required>
+                <option value="" selected>Seleccionar</option>
+                <option value="La Molina">La Molina</option>
+                <option value="Puruchuco">Puruchuco</option>
+                <option value="San Miguel">San Miguel</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="simulation-fields-grid">
+          <div class="field simulation-field">
+            <label for="clientDocumentType">Tipo de documento <span>*</span></label>
+            <select id="clientDocumentType" name="clientDocumentType" required>
+              <option value="DNI" selected>DNI</option>
+            </select>
+          </div>
+
+          <div class="field simulation-field">
+            <label for="clientDocument">N° de documento <span>*</span></label>
+            <input
+              id="clientDocument"
+              name="clientDocument"
+              type="text"
+              inputmode="numeric"
+              maxlength="8"
+              pattern="[0-9]{8}"
+              placeholder="Ingrese documento"
+              required
+            />
+          </div>
+
+          <section id="manualPersonForm" class="manual-person-form" aria-labelledby="manual-person-title" hidden>
+            <div class="manual-person-heading">
+              <h3 id="manual-person-title">Datos de la persona</h3>
+              <p>No se encontraron datos para el documento ingresado. Completa la información.</p>
+            </div>
+
+            <div class="manual-person-grid">
+              <div class="field simulation-field">
+                <label for="clientNames">Nombres <span>*</span></label>
+                <input id="clientNames" name="clientNames" type="text" placeholder="Ingrese nombres" />
+              </div>
+
+              <div class="field simulation-field">
+                <label for="paternalSurname">Apellido paterno <span>*</span></label>
+                <input
+                  id="paternalSurname"
+                  name="paternalSurname"
+                  type="text"
+                  placeholder="Ingrese apellido paterno"
+                />
+              </div>
+
+              <div class="field simulation-field">
+                <label for="maternalSurname">Apellido materno <span>*</span></label>
+                <input
+                  id="maternalSurname"
+                  name="maternalSurname"
+                  type="text"
+                  placeholder="Ingrese apellido materno"
+                />
+              </div>
+
+              <div class="field simulation-field">
+                <label for="civilStatus">Estado civil <span>*</span></label>
+                <select id="civilStatus" name="civilStatus">
+                  <option value="" selected>Seleccionar</option>
+                  <option value="SOLTERO">Soltero(a)</option>
+                  <option value="CASADO">Casado(a)</option>
+                  <option value="CONVIVIENTE">Conviviente</option>
+                  <option value="DIVORCIADO">Divorciado(a)</option>
+                  <option value="VIUDO">Viudo(a)</option>
+                </select>
+              </div>
+
+              <div class="field simulation-field">
+                <label for="birthDate">Fecha de nacimiento <span>*</span></label>
+                <input id="birthDate" name="birthDate" type="date" />
+              </div>
+            </div>
+          </section>
+
+          <div class="field simulation-field">
+            <label for="clientPhone">N° de teléfono</label>
+            <input
+              id="clientPhone"
+              name="clientPhone"
+              type="tel"
+              inputmode="numeric"
+              maxlength="9"
+              pattern="9[0-9]{8}"
+              placeholder="Ingrese teléfono"
+            />
+          </div>
+
+          <div class="field simulation-field">
+            <label for="vehiclePrice">Precio del vehículo ($) <span>*</span></label>
+            <input
+              id="vehiclePrice"
+              name="vehiclePrice"
+              type="text"
+              inputmode="decimal"
+              placeholder="$ 0.00"
+              required
+            />
+          </div>
+        </div>
+
+        <section id="spouseCard" class="card spouse-card" aria-labelledby="spouse-heading" hidden>
+          <div class="spouse-header">
+            <h2 id="spouse-heading">Conyugue</h2>
+            <button id="addSpouseButton" class="add-spouse-button" type="button">
+              <span aria-hidden="true">＋</span>
+              Agregar conyugue
+            </button>
+          </div>
+          <div id="spouseContent" class="spouse-content">
+            <p>Sin datos cargados</p>
+          </div>
+          <p id="spouseRequiredMessage" class="spouse-required-message" hidden>
+            Debes registrar los datos del conyugue para continuar.
+          </p>
+        </section>
+
+        <div class="simulation-action-area">
+          <button id="simulationConsentLink" class="simulation-consent-link" type="button">
+            El cliente acepta que sus datos ingresados serán utilizados para la simulación y evaluación preliminar del crédito
+          </button>
+          <div class="simulation-actions">
+            <button
+              id="clearSimulationButton"
+              class="simulation-clear-button"
+              type="reset"
+            >
+              Limpiar
+            </button>
+            <button id="confirmSimulationButton" class="confirm-button" type="button">
+              Confirmar
+            </button>
+          </div>
+          <p id="simulationMessage" class="simulation-message" aria-live="polite"></p>
+        </div>
+      </form>
+    </main>
+
+    <main id="resultView" class="result-view" hidden>
+      <div class="result-stage-banner">
+        <span>01</span>
+        SIMULACIÓN
+      </div>
+
+      <section class="card result-summary-card">
+        <div>
+          <span>N° de solicitud</span>
+          <strong id="resultRequestNumber">—</strong>
+          <small>La solicitud ha sido creada y almacenada en su bandeja.</small>
+        </div>
+        <div>
+          <span>Tipo de documento</span>
+          <strong>DNI</strong>
+        </div>
+        <div>
+          <span>N° de documento</span>
+          <strong id="resultDocumentNumber">—</strong>
+        </div>
+        <div class="result-date-block">
+          <span class="calendar-icon" aria-hidden="true"></span>
+          <div>
+            <span>Fecha y hora de consulta</span>
+            <strong id="resultDateTime">—</strong>
+          </div>
+        </div>
+      </section>
+
+      <div class="result-tabs" aria-label="Pasos de simulación">
+        <button id="resultPreliminaryTab" class="result-tab active" type="button">
+          <span>01</span>
+          <strong>Resultado de evaluación preliminar</strong>
+          <small>Evaluación del cliente</small>
+        </button>
+        <button id="resultCalculationTab" class="result-tab" type="button" disabled aria-disabled="true">
+          <span>02</span>
+          <strong>Cálculo</strong>
+          <small>Parámetros y cuotas</small>
+        </button>
+      </div>
+
+      <p class="result-intro">Consulta el resultado de la evaluación preliminar del cliente.</p>
+
+      <section class="preapproved-card">
+        <span>Monto preaprobado</span>
+        <strong>S/ 250,000.00</strong>
+        <p>Cuota inicial mínima: <b>10%</b> <i></i> Plazo máximo: <b>60 meses</b></p>
+      </section>
+
+      <section id="qualificationCard" class="card qualification-card">
+        <span class="qualification-icon" aria-hidden="true">✓</span>
+        <div>
+          <small>Resultado de calificación</small>
+          <strong id="qualificationResult">CALIFICA</strong>
+          <p id="qualificationDescription">El cliente cumple con los criterios de evaluación.</p>
+        </div>
+      </section>
+
+      <div class="result-metrics">
+        <section class="card metric-card">
+          <span class="metric-icon green" aria-hidden="true">◇</span>
+          <div><small>Segmento de riesgo</small><strong>PREFERENTE</strong></div>
+        </section>
+        <section class="card metric-card">
+          <span class="metric-icon blue" aria-hidden="true">▣</span>
+          <div><small>Ingreso estimado</small><strong>S/ 5,850.00</strong></div>
+        </section>
+        <section class="card metric-card">
+          <span class="metric-icon navy" aria-hidden="true">▤</span>
+          <div>
+            <small>Capacidad de cuota máxima</small>
+            <em>según monto preaprobado e ingreso estimado</em>
+            <strong>S/ 2,047.50</strong>
+          </div>
+        </section>
+      </div>
+
+      <section class="card compliance-card">
+        <div class="compliance-column">
+          <span class="compliance-icon">♙</span>
+          <div class="compliance-copy">
+            <b>PEP</b>
+            <div class="compliance-subject"><span id="pepHolderLabel" class="subject-label" hidden>Titular</span><strong id="pepResult">No aplica</strong><small>El cliente no está identificado como PEP.</small></div>
+            <div id="pepSpouseResult" class="compliance-subject spouse-compliance-result" hidden><span class="subject-label">Conyugue</span><strong>No aplica</strong><small>El cliente no está identificado como PEP.</small></div>
+          </div>
+        </div>
+        <div class="compliance-column">
+          <span class="compliance-icon">◈</span>
+          <div class="compliance-copy">
+            <b>PLAFT</b>
+            <div class="compliance-subject"><span id="plaftHolderLabel" class="subject-label" hidden>Titular</span><strong id="plaftResult">Sin observaciones</strong><small>El cliente no presenta observaciones en listas restrictivas.</small></div>
+            <div id="plaftSpouseResult" class="compliance-subject spouse-compliance-result" hidden><span class="subject-label">Conyugue</span><strong>Sin observaciones</strong><small>El cliente no presenta observaciones en listas restrictivas.</small></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="result-actions">
+        <button id="resultBackButton" class="secondary-button" type="button">Regresar</button>
+        <button id="resultNextButton" class="confirm-button" type="button">Siguiente</button>
+      </div>
+    </main>
+
+    <main id="calculationView" class="result-view calculation-view" hidden>
+      <div class="solicitation-stage-tabs workflow-stage-navigation">
+        <button class="active" type="button" aria-current="step"><span>01</span><strong>SIMULACIÓN</strong></button>
+        <button id="calculationSolicitationStageButton" type="button" disabled><span>02</span><strong>SOLICITUD</strong></button>
+      </div>
+
+      <section class="card result-summary-card calculation-summary-card">
+        <div><span>N° de solicitud</span><strong id="calculationRequestNumber">—</strong><small>La solicitud ha sido creada y almacenada en su bandeja.</small></div>
+        <div><span>Capacidad máxima</span><strong>S/ 2,047.50</strong></div>
+        <div><span>Inicial mínima</span><strong>10%</strong></div>
+        <div><span>Segmento</span><strong>PREFERENTE</strong></div>
+        <div class="result-date-block"><span class="calendar-icon" aria-hidden="true"></span><div><span>Fecha y hora de consulta</span><strong id="calculationDateTime">—</strong></div></div>
+      </section>
+
+      <div class="result-tabs" aria-label="Pasos de simulación">
+        <button id="calculationPreliminaryTab" class="result-tab" type="button"><span>01</span><strong>Resultado de evaluación preliminar</strong><small>Evaluación del cliente</small></button>
+        <button class="result-tab active" type="button"><span>02</span><strong>Cálculo</strong><small>Parámetros y cuotas</small></button>
+      </div>
+
+      <p class="result-intro">Completa los parámetros de crédito para generar la grilla de cuotas y determinar la cartera aplicable.</p>
+
+      <section class="card calculation-parameters-card">
+        <h2>Parámetros del crédito</h2>
+        <p>Completa la información por sección para preparar la simulación de crédito.</p>
+
+        <section class="calculation-section">
+          <h3>Vehículo / operación</h3>
+          <div class="calculation-grid vehicle-grid">
+            <label>Tipo de cambio<input id="exchangeRate" value="3.78" inputmode="decimal"></label>
+            <label>Precio del vehículo ($)<input id="calculationVehiclePrice" readonly></label>
+            <label class="initial-payment-field"><span class="field-label">Monto de cuota inicial</span><span class="initial-payment-controls"><input id="initialPayment" inputmode="decimal" placeholder="$ 0.00"><span id="initialPaymentPercentage" class="percentage-chip">0.00%</span></span></label>
+            <label>Plazo seleccionado<select id="selectedTerm"><option value="">Seleccionar</option><option>12 meses</option><option>24 meses</option><option>36 meses</option><option>48 meses</option><option>60 meses</option></select></label>
+          </div>
+        </section>
+
+        <section class="calculation-section">
+          <h3>Seguros</h3>
+          <div class="calculation-grid">
+            <label>Tipo de seguro vehicular<select id="vehicleInsuranceType"><option value="con_seguro">Con Seguro</option><option value="endosado">Endosado</option></select></label>
+            <label id="annualVehicleInsuranceField">Porcentaje anual de seguro vehicular (%)<input id="annualVehicleInsurancePercentage" inputmode="decimal" placeholder="00.00 %"></label>
+            <label>Seguro de desgravamen<select id="creditLifeInsurance"><option value="con_seguro">Con seguro</option><option value="endosado">Endosado</option><option value="sin_seguro">Sin seguro</option></select></label>
+            <label id="creditLifeInsuranceTypeField">Tipo de seguro desgravamen<select id="creditLifeInsuranceType"><option>Individual</option><option>Devolución</option><option>Con asistencia</option></select></label>
+          </div>
+        </section>
+
+        <section class="calculation-section">
+          <h3>GPS</h3>
+          <div class="calculation-grid two-columns">
+            <label>GPS<select id="gpsOption"><option value="con_gps">Con GPS</option><option value="sin_gps">Sin GPS</option></select></label>
+            <label id="gpsTypeField">Tipo de GPS<select id="gpsType"><option>Premium</option><option>Básico</option></select></label>
+          </div>
+        </section>
+
+        <section class="calculation-section">
+          <h3>Gastos</h3>
+          <div class="calculation-grid">
+            <label>Gastos registrales<select id="registrationExpenses"><option>Si</option><option>No</option></select></label>
+            <label>Gastos notariales<select id="notarialExpenses"><option>Si</option><option>No</option></select></label>
+            <label>Toma de firmas<select id="signatureExpenses"><option>Si</option><option>No</option></select></label>
+            <label>Portes<select id="shippingExpenses"><option>No</option><option>Si</option></select></label>
+            <label>Cuotas Dobles<select id="doubleInstallments"><option>No</option><option>Si</option></select></label>
+            <label id="doubleInstallmentMonthsField" hidden>Meses de cuotas dobles<input id="doubleInstallmentMonths" value="Agosto / Enero" readonly></label>
+          </div>
+        </section>
+
+        <section class="calculation-section">
+          <h3>Ingresos</h3>
+          <div class="calculation-grid three-columns income-grid">
+            <label>Ingreso estimado<input id="estimatedIncome" value="S/ 5,850.00" readonly></label>
+            <label class="declared-income-field"><span class="declared-income-label">Ingreso declarado (Soles)<span id="jointIncomeField" class="joint-income-option" hidden><input id="jointIncome" type="checkbox"> Mancomunar</span></span><span class="declared-income-control"><input id="declaredIncome" value="0.00" readonly aria-expanded="false" aria-controls="incomeDetailPanel"><span id="incomeChevron" aria-hidden="true">⌄</span></span></label>
+            <label class="pilot-checkbox is-disabled"><input id="pilotConditions" type="checkbox" disabled><span>El caso cumple las condiciones del piloto</span></label>
+          </div>
+
+          <div id="incomeDetailPanel" class="income-detail-panel" hidden>
+            <div class="income-detail-heading">
+              <div><h4>INGRESOS</h4></div>
+              <button id="closeIncomePanel" type="button" aria-label="Cerrar detalle de ingresos">⌃</button>
+            </div>
+            <div class="income-person-card">
+              <section class="income-subject-card">
+                <h4>INGRESOS DEL TITULAR</h4>
+                <p>Registra los ingresos declarados por el titular. Puedes añadir como máximo dos ingresos.</p>
+                <div id="holderIncomeRows" class="income-rows"></div>
+                <button id="addHolderIncome" class="add-income-button" type="button"><span>＋</span> Añadir ingresos</button>
+                <div class="income-total"><strong>Total ingresos titular:</strong><b id="holderIncomeTotal">S/ 0.00</b></div>
+              </section>
+              <section id="spouseIncomeSection" class="income-subject-card" hidden>
+                <h4>INGRESOS DEL CONYUGUE</h4>
+                <p>Registra los ingresos declarados por el conyugue. Puedes añadir como máximo dos ingresos.</p>
+                <div id="spouseIncomeRows" class="income-rows"></div>
+                <button id="addSpouseIncome" class="add-income-button" type="button"><span>＋</span> Añadir ingresos</button>
+                <div class="income-total"><strong>Total ingresos conyugue:</strong><b id="spouseIncomeTotal">S/ 0.00</b></div>
+              </section>
+            </div>
+            <div class="combined-income-total"><span>Total de ingresos declarados</span><strong id="combinedIncomeTotal">S/ 0.00</strong></div>
+          </div>
+          <div class="income-calculate-action">
+            <p id="calculationValidationMessage" class="calculation-validation-message" aria-live="polite"></p>
+            <button id="calculateButton" class="confirm-button calculate-button is-pending" type="button" aria-disabled="true">▣&nbsp; Calcular</button>
+          </div>
+        </section>
+
+        <div class="calculation-footer-grid">
+          <label>N° de teléfono<input id="calculationPhone" type="tel" inputmode="numeric" maxlength="9" pattern="9[0-9]{8}" placeholder="Ingrese teléfono"></label>
+          <label>Monto a financiar<input id="amountToFinance" placeholder="S/ 0.00" readonly></label>
+          <label class="day-payment-field">Día de pago<select id="paymentDay" disabled><option value="" selected>Seleccionar</option><option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option><option>07</option><option>08</option><option>09</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option><option>22</option><option>23</option><option>24</option><option>25</option><option>26</option><option>27</option><option>28</option><option>29</option><option>30</option><option>31</option></select><button id="simulateButton" class="confirm-button simulate-button" type="button" hidden disabled>Simular</button></label>
+        </div>
+
+        <section id="calculationResultCard" class="calculation-result-card" hidden>
+          <div class="calculation-result-heading">
+            <div><h2>Resultado del cálculo</h2><p>Selecciona una fila de la grilla para continuar con la solicitud.</p></div>
+          </div>
+          <div class="calculation-result-table-wrap">
+            <table class="calculation-result-table">
+              <thead><tr><th>Plazo</th><th>TEA</th><th>Cuota</th><th>CME</th><th>Capacidad</th></tr></thead>
+              <tbody><tr><td id="resultTerm">—</td><td id="resultTea">12.80%</td><td id="resultInstallment">S/ 0.00</td><td id="resultCme">S/ 2,047.50</td><td><span id="resultCapacity" class="capacity-badge">—</span></td></tr></tbody>
+            </table>
+          </div>
+          <div class="calculation-policy-grid">
+            <article><span>Carretera aplicable según política de Riesgos</span><strong id="resultPortfolio">EXPRESS</strong></article>
+            <article><span>Documentos requeridos según la cartera resultante</span><ul id="resultDocuments" class="required-documents"><li>–</li></ul></article>
+            <article><span>Verificación aplicable según política de Riesgos</span><strong id="resultVerification">No aplica</strong></article>
+          </div>
+        </section>
+      </section>
+
+      <div class="result-actions">
+        <button id="calculationBackButton" class="secondary-button" type="button">Regresar</button>
+        <button id="continueRequestButton" class="confirm-button" type="button" disabled>Continuar con solicitud</button>
+      </div>
+    </main>
+
+    <main id="solicitationView" class="solicitation-view" hidden>
+      <div class="solicitation-stage-tabs">
+        <button id="solicitationSimulationStageButton" type="button"><span>01</span><strong>SIMULACIÓN</strong></button>
+        <button class="active" type="button" aria-current="step"><span>02</span><strong>SOLICITUD</strong></button>
+      </div>
+
+      <section class="card solicitation-summary">
+        <div><span>SOLICITUD:</span><strong id="solicitationRequestNumber">—</strong></div>
+        <div><span>ETAPA:</span><strong id="solicitationStage">SOLICITUD</strong></div>
+        <div><span>ESTADO:</span><strong id="solicitationStatus">PENDIENTE</strong></div>
+        <div><span>CARRETERA:</span><strong id="solicitationPortfolio" class="portfolio-pill">EXPRESS</strong></div>
+        <div><span>FECHA Y HORA DE SIMULACIÓN:</span><strong id="solicitationDateTime">—</strong></div>
+      </section>
+
+      <section class="card solicitation-client-card">
+        <h2>DATOS DE CLIENTE</h2>
+        <div class="solicitation-accordions">
+          <article class="solicitation-accordion">
+            <button class="solicitation-accordion-toggle" type="button" aria-expanded="false">
+              <span class="accordion-person-icon" aria-hidden="true">♙</span>
+              <span><small>Titular</small><strong id="solicitationHolderName">—</strong></span>
+              <em id="holderAccordionStatus">Sin completar</em><i aria-hidden="true">›</i>
+            </button>
+            <div class="solicitation-accordion-content holder-detail" hidden>
+              <section class="holder-information-card">
+                <header><h3><span aria-hidden="true">♙</span> Datos personales</h3><div class="holder-edit-actions"><button id="editHolderPersonal" type="button">✎&nbsp; Editar</button><button id="cancelHolderPersonal" type="button" hidden>Cancelar</button><button id="saveHolderPersonal" type="button" hidden>Guardar</button></div></header>
+                <dl class="holder-data-grid">
+                  <div><dt>Tipo de documento</dt><dd>DNI</dd></div>
+                  <div><dt>Número de documento</dt><dd id="holderDocument">—</dd></div>
+                  <div><dt>Nombres</dt><dd id="holderNames">—</dd></div>
+                  <div><dt>Apellido paterno</dt><dd id="holderPaternalSurname">—</dd></div>
+                  <div><dt>Apellido materno</dt><dd id="holderMaternalSurname">—</dd></div>
+                  <div><dt>Género</dt><dd>Masculino</dd></div>
+                  <div><dt>Fecha de nacimiento</dt><dd id="holderBirthDate">—</dd></div>
+                  <div><dt>País de nacimiento</dt><dd><select id="holderBirthCountry" disabled><option value="" selected>Seleccionar</option><option>Perú</option><option>Argentina</option><option>Bolivia</option><option>Chile</option><option>Colombia</option><option>Ecuador</option><option>Venezuela</option><option>Otro</option></select></dd></div>
+                  <div><dt>País de residencia</dt><dd><select id="holderResidenceCountry" disabled><option value="" selected>Seleccionar</option><option>Perú</option><option>Argentina</option><option>Bolivia</option><option>Chile</option><option>Colombia</option><option>Ecuador</option><option>Venezuela</option><option>Otro</option></select></dd></div>
+                  <div><dt>Profesión</dt><dd><select id="holderProfession" disabled><option value="" selected>Seleccionar</option><option>Administrador</option><option>Abogado</option><option>Contador</option><option>Economista</option><option>Ingeniero</option><option>Médico</option><option>Docente</option><option>Técnico</option><option>Comerciante</option><option>Otra</option></select></dd></div>
+                  <div><dt>Estado civil</dt><dd><select id="holderCivilStatus" disabled><option value="SOLTERO">Soltero</option><option value="CASADO">Casado</option><option value="DIVORCIADO">Divorciado</option><option value="VIUDO">Viudo</option></select></dd></div>
+                </dl>
+              </section>
+              <section class="holder-information-card">
+                <header><h3><span aria-hidden="true">⌕</span> Datos de contacto</h3><div class="holder-edit-actions"><button id="editHolderContact" type="button">✎&nbsp; Editar</button><button id="cancelHolderContact" type="button" hidden>Cancelar</button><button id="saveHolderContact" type="button" hidden>Guardar</button></div></header>
+                <dl class="holder-data-grid contact-grid">
+                  <div><dt>Teléfono</dt><dd><input id="holderPhone" type="tel" inputmode="numeric" maxlength="9" pattern="9[0-9]{8}" placeholder="Ingrese teléfono" disabled></dd></div>
+                  <div><dt>Correo electrónico</dt><dd><input id="holderEmail" type="email" placeholder="Ingrese correo electrónico" disabled></dd></div>
+                </dl>
+              </section>
+              <section class="holder-information-card address-card">
+                <header><h3><span aria-hidden="true">⌂</span> Dirección domiciliaria <mark id="addressValidationStatus">Por confirmar</mark></h3><button id="validateAddressButton" type="button" disabled>Validar</button></header>
+                <dl class="holder-data-grid">
+                  <div><dt>Tipo de propiedad</dt><dd><select id="holderPropertyType"><option value="" selected>Seleccionar</option><option>Propia</option><option>Alquilada</option><option>Familiar</option></select></dd></div>
+                  <div><dt>Antigüedad domiciliaria</dt><dd class="address-age"><input id="holderAddressYears" type="number" min="0" placeholder="Años"><input id="holderAddressMonths" type="number" min="0" max="11" placeholder="Meses"></dd></div>
+                  <div><dt>Departamento</dt><dd><select id="holderDepartment"><option value="" selected>Seleccionar</option><option>Lima</option><option>Arequipa</option><option>La Libertad</option><option>Piura</option><option>Cusco</option></select></dd></div>
+                  <div><dt>Provincia</dt><dd><select id="holderProvince"><option value="" selected>Seleccionar</option><option>Lima</option><option>Arequipa</option><option>Trujillo</option><option>Piura</option><option>Cusco</option></select></dd></div>
+                  <div><dt>Distrito</dt><dd><select id="holderDistrict"><option value="" selected>Seleccionar</option><option>Santiago de Surco</option><option>San Isidro</option><option>Miraflores</option><option>San Miguel</option><option>La Molina</option></select></dd></div>
+                  <div><dt>Dirección</dt><dd><input id="holderAddress" placeholder="Ingrese dirección"></dd></div>
+                  <div class="address-reference"><dt>Referencia</dt><dd><input id="holderAddressReference" placeholder="Ingrese referencia"></dd></div>
+                </dl>
+              </section>
+              <section class="holder-information-card employment-card">
+                <header><h3><span aria-hidden="true">▦</span> Datos laborales</h3></header>
+                <dl class="holder-data-grid employment-data-grid">
+                  <div><dt>Categoría laboral</dt><dd><select id="employmentCategory"><option value="" selected>Seleccionar</option><option>Dependiente</option><option>Independiente</option><option>Jubilado</option></select></dd></div>
+                  <div><dt>RUC de empleador (no obligatorio)</dt><dd><input id="employerRuc" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" placeholder="Ingrese RUC"></dd></div>
+                  <div><dt>Nombre centro de laboral</dt><dd><input id="workplaceName" placeholder="Ingrese nombre centro laboral"></dd></div>
+                  <div><dt>Dirección</dt><dd><input id="workplaceAddress" placeholder="Ingrese dirección"></dd></div>
+                  <div><dt>Giro o actividad</dt><dd><select id="employmentActivity"><option value="" selected>Seleccionar</option><option>Comercio</option><option>Servicios</option><option>Manufactura</option></select></dd></div>
+                  <div><dt id="employmentPositionLabel">Cargo</dt><dd><select id="employmentPosition"><option value="" selected>Seleccionar</option><option>Empleado</option><option>Gerente</option><option>Subgerente</option><option>Operario</option></select></dd></div>
+                  <div><dt>Fecha ingreso laboral</dt><dd><input id="employmentStartDate" type="date"></dd></div>
+                  <div><dt>Tipo moneda ingreso</dt><dd><select id="employmentCurrency"><option value="Soles (S/)" selected>Soles (S/)</option></select></dd></div>
+                  <div><dt>Ingresos netos mensuales</dt><dd><input id="monthlyNetIncome" inputmode="decimal" placeholder="S/ 0.00"></dd></div>
+                </dl>
+              </section>
+            </div>
+          </article>
+
+          <article id="solicitationSpouseAccordion" class="solicitation-accordion" hidden>
+            <button class="solicitation-accordion-toggle" type="button" aria-expanded="false">
+              <span class="accordion-person-icon" aria-hidden="true">♟</span>
+              <span><small>Conyugue</small><strong id="solicitationSpouseName">—</strong></span>
+              <em id="spouseAccordionStatus">Sin completar</em><i aria-hidden="true">›</i>
+            </button>
+            <div class="solicitation-accordion-content holder-detail" hidden>
+              <section class="holder-information-card">
+                <header><h3><span aria-hidden="true">♙</span> Datos personales</h3><div class="holder-edit-actions"><button id="editSpousePersonal" type="button">✎&nbsp; Editar</button><button id="cancelSpousePersonal" type="button" hidden>Cancelar</button><button id="saveSpousePersonal" type="button" hidden>Guardar</button></div></header>
+                <dl class="holder-data-grid">
+                  <div><dt>Tipo de documento</dt><dd>DNI</dd></div>
+                  <div><dt>Número de documento</dt><dd id="spouseHolderDocument">—</dd></div>
+                  <div><dt>Nombres</dt><dd id="spouseHolderNames">—</dd></div>
+                  <div><dt>Apellido paterno</dt><dd id="spousePaternalSurname">—</dd></div>
+                  <div><dt>Apellido materno</dt><dd id="spouseMaternalSurname">—</dd></div>
+                  <div><dt>Género</dt><dd id="spouseGender">Femenino</dd></div>
+                  <div><dt>Fecha de nacimiento</dt><dd id="spouseBirthDate">—</dd></div>
+                  <div><dt>País de nacimiento</dt><dd><select id="spouseBirthCountry" disabled><option value="" selected>Seleccionar</option><option>Perú</option><option>Argentina</option><option>Bolivia</option><option>Chile</option><option>Colombia</option><option>Ecuador</option><option>Venezuela</option><option>Otro</option></select></dd></div>
+                  <div><dt>País de residencia</dt><dd><select id="spouseResidenceCountry" disabled><option value="" selected>Seleccionar</option><option>Perú</option><option>Argentina</option><option>Bolivia</option><option>Chile</option><option>Colombia</option><option>Ecuador</option><option>Venezuela</option><option>Otro</option></select></dd></div>
+                  <div><dt>Profesión</dt><dd><select id="spouseProfession" disabled><option value="" selected>Seleccionar</option><option>Administrador</option><option>Abogado</option><option>Contador</option><option>Economista</option><option>Ingeniero</option><option>Médico</option><option>Docente</option><option>Técnico</option><option>Comerciante</option><option>Otra</option></select></dd></div>
+                  <div><dt>Estado civil</dt><dd><select id="spouseCivilStatus" disabled><option value="SOLTERO">Soltero</option><option value="CASADO" selected>Casado</option><option value="DIVORCIADO">Divorciado</option><option value="VIUDO">Viudo</option></select></dd></div>
+                </dl>
+              </section>
+              <section class="holder-information-card">
+                <header><h3><span aria-hidden="true">⌕</span> Datos de contacto</h3><div class="holder-edit-actions"><button id="editSpouseContact" type="button">✎&nbsp; Editar</button><button id="cancelSpouseContact" type="button" hidden>Cancelar</button><button id="saveSpouseContact" type="button" hidden>Guardar</button></div></header>
+                <dl class="holder-data-grid contact-grid">
+                  <div><dt>Teléfono</dt><dd><input id="spousePhone" type="tel" inputmode="numeric" maxlength="9" pattern="9[0-9]{8}" placeholder="Ingrese teléfono" disabled></dd></div>
+                  <div><dt>Correo electrónico</dt><dd><input id="spouseEmail" type="email" placeholder="Ingrese correo electrónico" disabled></dd></div>
+                </dl>
+              </section>
+            </div>
+          </article>
+
+          <article class="solicitation-accordion">
+            <button class="solicitation-accordion-toggle" data-accordion="vehicle" type="button" aria-expanded="false">
+              <span class="accordion-section-icon" aria-hidden="true">▣</span>
+              <span><strong>DATOS DE VEHÍCULO</strong></span>
+              <em id="vehicleAccordionStatus">Sin completar</em><i aria-hidden="true">›</i>
+            </button>
+            <div class="solicitation-accordion-content vehicle-detail" hidden>
+              <section class="holder-information-card">
+                <header><h3><span aria-hidden="true">▣</span> Datos del vehículo</h3></header>
+                <dl class="holder-data-grid vehicle-data-grid">
+                  <div><dt>Estado vehículo</dt><dd><input id="solicitationVehicleCondition" value="Nuevo" disabled></dd></div>
+                  <div><dt>Concesionario</dt><dd><input id="solicitationVehicleDealer" disabled></dd></div>
+                  <div><dt>Sucursal</dt><dd><input id="solicitationVehicleBranch" disabled></dd></div>
+                  <div><dt>Tipo Doc. vendedor</dt><dd><select id="vehicleSellerDocumentType"><option value="DNI" selected>DNI</option></select></dd></div>
+                  <div><dt>N° Doc vendedor</dt><dd><input id="vehicleSellerDocument" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" placeholder="Ingrese documento"></dd></div>
+                  <div><dt>Nombre completo vendedor</dt><dd><input id="vehicleSellerName" placeholder="Ingrese nombre completo"></dd></div>
+                  <div><dt>Marca</dt><dd><select id="solicitationVehicleBrand"><option value="" selected>Seleccionar</option><option>Toyota</option><option>Hyundai</option><option>Kia</option><option>Chevrolet</option><option>Nissan</option></select></dd></div>
+                  <div><dt>Modelo</dt><dd><select id="solicitationVehicleModel"><option value="" selected>Seleccionar</option><option>Corolla</option><option>Yaris</option><option>Accent</option><option>Rio</option><option>Versa</option></select></dd></div>
+                  <div><dt>Año modelo</dt><dd><input id="solicitationVehicleYear" type="number" min="1900" max="2100" placeholder="Ingrese año"></dd></div>
+                  <div><dt>Tarjeta propiedad a nombre de</dt><dd><select id="vehicleOwnership"><option value="" selected>Seleccionar</option><option>Titular</option><option>Tercero</option></select></dd></div>
+                  <div class="vehicle-third-party-field" hidden><dt>Nombres</dt><dd><input id="vehicleThirdPartyNames" maxlength="80" placeholder="Ingrese nombres"></dd></div>
+                  <div class="vehicle-third-party-field" hidden><dt>Apellido paterno</dt><dd><input id="vehicleThirdPartyPaternalSurname" maxlength="50" placeholder="Ingrese apellido paterno"></dd></div>
+                  <div class="vehicle-third-party-field" hidden><dt>Apellido materno</dt><dd><input id="vehicleThirdPartyMaternalSurname" maxlength="50" placeholder="Ingrese apellido materno"></dd></div>
+                  <div class="documentary-vehicle-field" hidden><dt>Color</dt><dd><input id="vehicleColor" maxlength="30" placeholder="Ingrese color"></dd></div>
+                  <div class="documentary-vehicle-field" hidden><dt>Tipo de vehículo</dt><dd><select id="vehicleType"><option value="" selected>Seleccionar</option><option>Automóvil</option><option>SUV</option><option>Pick-up</option><option>Van</option></select></dd></div>
+                  <div class="documentary-vehicle-field" hidden><dt>VIN</dt><dd><input id="vehicleVin" maxlength="17" placeholder="Ingrese VIN"></dd></div>
+                  <div class="documentary-vehicle-field" hidden><dt>N° de motor</dt><dd><input id="vehicleEngineNumber" maxlength="30" placeholder="Ingrese número de motor"></dd></div>
+                </dl>
+                <div id="documentaryVehicleActions" class="documentary-vehicle-actions" hidden>
+                  <button id="generateGuaranteeButton" class="confirm-button" type="button" disabled>Generar garantía</button>
+                </div>
+              </section>
+            </div>
+          </article>
+
+          <article class="solicitation-accordion">
+            <button class="solicitation-accordion-toggle" type="button" aria-expanded="false">
+              <span class="accordion-section-icon" aria-hidden="true">▤</span>
+              <span><strong>DATOS DEL CRÉDITO</strong></span>
+              <em class="complete">Completo</em><i aria-hidden="true">›</i>
+            </button>
+            <div class="solicitation-accordion-content credit-detail" hidden>
+              <section class="credit-readonly-card">
+                <h3>CRÉDITO Y SIMULACIÓN</h3>
+                <div class="credit-readonly-grid">
+                  <label>Producto<input value="Crédito Vehicular" readonly></label>
+                  <label>Campaña comercial<input value="SUV Mayo 2026" readonly></label>
+                  <label>Moneda Financiamiento<input value="Soles (S/.)" readonly></label>
+                  <label>Tipo Cambio<input id="creditExchangeRate" readonly></label>
+                  <label>Precio Vehículo<input id="creditVehiclePrice" readonly></label>
+                  <label>Cuota Inicial<input id="creditInitialPayment" readonly></label>
+                  <label>TEA<input value="12.80%" readonly></label>
+                  <label>Plazo Meses<input id="creditTerm" readonly></label>
+                  <label>Día Pago<input id="creditPaymentDay" readonly></label>
+                  <label>Total Financiamiento<input id="creditTotalFinancing" readonly></label>
+                </div>
+              </section>
+              <section class="credit-readonly-card">
+                <h3>GASTOS Y PLAN GPS</h3>
+                <div class="credit-readonly-grid">
+                  <label>Gastos Notariales<input id="creditNotarialExpenses" readonly></label>
+                  <label>Gastos Registrales (sábana)<input id="creditRegistrationExpenses" readonly></label>
+                  <label>Gastos Delivery Firma<input id="creditSignatureExpenses" readonly></label>
+                  <label>Plan GPS<input id="creditGpsPlan" readonly></label>
+                  <label>Gastos Inclusión GPS (cálculo)<input id="creditGpsCost" readonly></label>
+                  <label>Cuotas Dobles<input id="creditDoubleInstallments" readonly></label>
+                  <label>Meses de cuotas dobles<input id="creditDoubleMonths" readonly></label>
+                  <label>Incluir Portes<input id="creditShippingExpenses" readonly></label>
+                </div>
+              </section>
+              <section class="credit-readonly-card">
+                <h3>SEGUROS</h3>
+                <div class="credit-readonly-grid">
+                  <label>Seguro Vehicular<input id="creditVehicleInsurance" readonly></label>
+                  <label>Costo Seguro Vehicular<input id="creditVehicleInsuranceCost" readonly></label>
+                  <label>Seguro Desgravamen<input id="creditLifeInsuranceSummary" readonly></label>
+                  <label>Tipo de seguro desgravamen<input id="creditLifeInsuranceTypeSummary" readonly></label>
+                </div>
+              </section>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="postApprovalDocumentsCard" class="card post-approval-documents-card" hidden>
+        <div class="post-approval-heading">
+          <div>
+            <h2>Documentos generados para Post Aprobación</h2>
+            <p>Descarga los documentos generados para continuar con la etapa documentaria.</p>
+          </div>
+          <button id="downloadAllPostApproval" class="confirm-button" type="button">⇩&nbsp; Descargar todos</button>
+        </div>
+        <div id="postApprovalDocumentList" class="post-approval-document-list"></div>
+      </section>
+
+      <section id="checklistTwoCard" class="card solicitation-documents-card checklist-two-card" hidden>
+        <div class="solicitation-documents-heading">
+          <div><h2>CheckList 2</h2><p>Adjunta los documentos correspondientes en formato PDF.</p></div>
+        </div>
+        <div class="checklist-two-upload-area">
+          <div id="checklistTwoItems" class="checklist-two-items"></div>
+          <small id="checklistTwoError" class="document-upload-error" aria-live="polite"></small>
+        </div>
+      </section>
+
+      <section id="solicitationDocumentsCard" class="card solicitation-documents-card">
+        <div class="solicitation-documents-heading">
+          <div><h2>DOCUMENTOS REQUERIDOS</h2><p>Adjunta entre 1 y 2 archivos PDF por cada requisito de la carretera asignada.</p></div>
+          <span id="documentsPortfolioBadge" class="portfolio-pill">EXPRESS</span>
+        </div>
+        <div id="requiredDocumentUploads" class="required-document-uploads"></div>
+      </section>
+
+      <section class="card solicitation-comments-card">
+        <div class="solicitation-comments-heading">
+          <div><h2>COMENTARIOS</h2><p>Registra información complementaria sobre la solicitud.</p></div>
+        </div>
+        <div id="solicitationCommentEditor" class="solicitation-comment-editor">
+          <label class="solicitation-comment-field" for="solicitationComment">
+            Comentario
+            <textarea id="solicitationComment" maxlength="250" rows="4" placeholder="Ingrese un comentario de hasta 250 caracteres"></textarea>
+            <span><small id="solicitationCommentError" class="comment-error" aria-live="polite"></small><b><span id="solicitationCommentCount">0</span>/250</b></span>
+          </label>
+          <div class="solicitation-comment-actions">
+            <button id="cancelSolicitationComment" class="secondary-button" type="button">Cancelar</button>
+            <button id="saveSolicitationComment" class="confirm-button" type="button">Guardar</button>
+          </div>
+        </div>
+        <div id="solicitationCommentHistory" class="solicitation-comment-history" aria-live="polite"></div>
+      </section>
+
+      <div class="result-actions">
+        <button id="solicitationBackButton" class="secondary-button" type="button">Regresar</button>
+        <div class="risk-submit-action"><p id="solicitationSubmissionError" aria-live="polite"></p><button id="sendToRiskButton" class="confirm-button" type="button">Enviar a Riesgos</button></div>
+        <button id="sendToOperationsButton" class="confirm-button" type="button" hidden>Enviar a Operaciones</button>
+      </div>
+    </main>
+
+    <div
+      id="toastContainer"
+      class="toast-container"
+      aria-label="Notificaciones de servicios"
+      aria-live="polite"
+    ></div>
+
+    <div id="successModal" class="modal-overlay success-overlay" hidden>
+      <section class="success-modal" role="dialog" aria-modal="true" aria-labelledby="success-title">
+        <div class="success-modal-heading">
+          <h2 id="success-title">Solicitud generada con éxito</h2>
+          <button id="closeSuccessModal" type="button" aria-label="Cerrar">×</button>
+        </div>
+        <div class="success-modal-body">
+          <span class="success-check" aria-hidden="true">✓</span>
+          <p>La simulación fue procesada correctamente.</p>
+          <div class="success-request-number">
+            <span>N° de solicitud</span>
+            <strong id="successRequestNumber">—</strong>
+          </div>
+        </div>
+        <div class="success-modal-actions">
+          <button id="acceptSuccessButton" class="confirm-button" type="button">Aceptar</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="addressMapModal" class="modal-overlay" hidden>
+      <section class="address-map-modal" role="dialog" aria-modal="true" aria-labelledby="address-map-title">
+        <div class="modal-heading">
+          <h2 id="address-map-title"><span aria-hidden="true">⌂</span> Validar dirección domiciliaria</h2>
+          <button id="closeAddressMapModal" class="modal-close" type="button" aria-label="Cerrar">×</button>
+        </div>
+        <p id="addressMapText" class="address-map-text"></p>
+        <iframe id="addressMapFrame" class="address-map-frame" title="Mapa de la dirección ingresada" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div class="modal-actions">
+          <button id="cancelAddressValidation" class="secondary-button" type="button">Cancelar</button>
+          <button id="confirmAddressValidation" class="modal-primary-button" type="button">Validar dirección</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="addressValidationSuccessModal" class="modal-overlay" hidden>
+      <section class="address-validation-success" role="dialog" aria-modal="true" aria-labelledby="address-valid-title">
+        <span class="address-valid-icon" aria-hidden="true">✓</span>
+        <h2 id="address-valid-title">Dirección válida</h2>
+        <p>La dirección domiciliaria fue validada correctamente.</p>
+        <button id="acceptAddressValidation" class="modal-primary-button" type="button">Aceptar</button>
+      </section>
+    </div>
+
+    <div id="plaftDeniedModal" class="modal-overlay" hidden>
+      <section class="risk-denied-modal" role="alertdialog" aria-modal="true" aria-labelledby="plaft-denied-title">
+        <button id="closePlaftDeniedModal" class="modal-close" type="button" aria-label="Cerrar">×</button>
+        <span class="risk-denied-icon" aria-hidden="true">×</span>
+        <h2 id="plaft-denied-title">No es posible continuar</h2>
+        <p id="plaftDeniedMessage"></p>
+        <button id="acceptPlaftDenied" class="secondary-button" type="button">Aceptar</button>
+      </section>
+    </div>
+
+    <div id="incompleteSolicitationModal" class="modal-overlay" hidden>
+      <section class="incomplete-solicitation-modal" role="alertdialog" aria-modal="true" aria-labelledby="incomplete-solicitation-title">
+        <button id="closeIncompleteSolicitationModal" class="modal-close" type="button" aria-label="Cerrar">×</button>
+        <span class="incomplete-warning-icon" aria-hidden="true">!</span>
+        <h2 id="incomplete-solicitation-title">Información pendiente</h2>
+        <p id="incompleteSolicitationMessage"></p>
+        <button id="acceptIncompleteSolicitation" class="modal-primary-button" type="button">Aceptar</button>
+      </section>
+    </div>
+
+    <div id="phoneOtpModal" class="modal-overlay" hidden>
+      <section class="otp-modal" role="dialog" aria-modal="true" aria-labelledby="phone-otp-title">
+        <button id="closePhoneOtpModal" class="modal-close" type="button" aria-label="Cerrar">×</button>
+        <h2 id="phone-otp-title">Política de Privacidad</h2>
+        <p>Se enviará al número celular registrado la Política de Privacidad de Banco Efectiva S.A.</p>
+        <p class="otp-destination-label">Número de celular: <strong id="phoneOtpDestination">—</strong></p>
+        <div id="phoneOtpInputs" class="otp-inputs" aria-label="Código OTP telefónico">
+          <input inputmode="numeric" maxlength="1" aria-label="Dígito 1"><input inputmode="numeric" maxlength="1" aria-label="Dígito 2"><input inputmode="numeric" maxlength="1" aria-label="Dígito 3"><input inputmode="numeric" maxlength="1" aria-label="Dígito 4">
+        </div>
+        <small id="phoneOtpError" class="otp-error" aria-live="polite"></small>
+        <div class="otp-footer"><b>0:58</b><button type="button">Reenviar código</button></div>
+      </section>
+    </div>
+
+    <div id="riskSubmissionSuccessModal" class="modal-overlay" hidden>
+      <section class="address-validation-success" role="dialog" aria-modal="true" aria-labelledby="risk-success-title">
+        <span class="address-valid-icon" aria-hidden="true">✓</span>
+        <h2 id="risk-success-title">Solicitud enviada a Riesgos</h2>
+        <p>La solicitud fue enviada correctamente para su evaluación.</p>
+        <button id="acceptRiskSubmission" class="modal-primary-button" type="button">Aceptar</button>
+      </section>
+    </div>
+
+    <div id="spouseModal" class="modal-overlay" hidden>
+      <section
+        class="spouse-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="spouse-modal-title"
+      >
+        <div class="modal-heading">
+          <h2 id="spouse-modal-title">
+            <span class="users-icon" aria-hidden="true"></span>
+            Cargar Conyugue
+          </h2>
+          <button id="closeSpouseModal" class="modal-close" type="button" aria-label="Cerrar">
+            ×
+          </button>
+        </div>
+
+        <div class="modal-fields">
+          <div class="field simulation-field">
+            <label for="spouseDocumentType">Tipo de documento <span>*</span></label>
+            <select id="spouseDocumentType" name="spouseDocumentType">
+              <option value="DNI" selected>DNI</option>
+            </select>
+          </div>
+
+          <div class="field simulation-field">
+            <label for="spouseDocument">Número de documento <span>*</span></label>
+            <input
+              id="spouseDocument"
+              name="spouseDocument"
+              type="text"
+              inputmode="numeric"
+              maxlength="8"
+              pattern="[0-9]{8}"
+              placeholder="Ingrese documento"
+            />
+            <small id="spouseError" class="field-error" aria-live="polite"></small>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="cancelSpouseButton" class="secondary-button" type="button">
+            Cancelar
+          </button>
+          <button id="filterSpouseButton" class="modal-primary-button" type="button">
+            Confirmar
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div id="simulationConsentModal" class="modal-overlay" hidden>
+      <section class="simulation-consent-modal" role="dialog" aria-modal="true" aria-labelledby="simulation-consent-title">
+        <div class="modal-heading">
+          <h2 id="simulation-consent-title">Uso de datos personales</h2>
+          <button id="closeSimulationConsentModal" class="modal-close" type="button" aria-label="Cerrar">×</button>
+        </div>
+        <p>Sus datos personales ingresados en este formulario serán utilizados exclusivamente para la simulación y evaluación preliminar de crédito vehicular por parte de Banco Efectiva S.A.</p>
+      </section>
+    </div>
+
+    <div id="creditPrivacyModal" class="modal-overlay" hidden>
+      <section class="simulation-consent-modal" role="dialog" aria-modal="true" aria-labelledby="credit-privacy-title">
+        <div class="modal-heading">
+          <h2 id="credit-privacy-title">Tratamiento de datos personales</h2>
+          <button id="closeCreditPrivacyModal" class="modal-close" type="button" aria-label="Cerrar">×</button>
+        </div>
+        <p>Los datos proporcionados serán tratados por Banco Efectiva S.A. para gestionar y evaluar su solicitud de crédito vehicular. Para más información, consulte la Política de Privacidad.</p>
+      </section>
+    </div>
+  </body>
+</html>
