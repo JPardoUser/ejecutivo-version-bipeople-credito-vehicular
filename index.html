@@ -315,12 +315,7 @@
               Agregar conyugue
             </button>
           </div>
-          <div id="spouseContent" class="spouse-content">
-            <p>Sin datos cargados</p>
-          </div>
-          <p id="spouseRequiredMessage" class="spouse-required-message" hidden>
-            Debes registrar los datos del conyugue para continuar.
-          </p>
+          <div id="spouseContent" class="spouse-content"></div>
         </section>
 
         <div class="simulation-action-area">
@@ -520,8 +515,9 @@
           <h3>Ingresos</h3>
           <div class="calculation-grid three-columns income-grid">
             <label>Ingreso estimado<input id="estimatedIncome" value="S/ 5,850.00" readonly></label>
-            <label class="declared-income-field"><span class="declared-income-label">Ingreso declarado (Soles)<span id="jointIncomeField" class="joint-income-option" hidden><input id="jointIncome" type="checkbox"> Mancomunar</span></span><span class="declared-income-control"><input id="declaredIncome" value="0.00" readonly aria-expanded="false" aria-controls="incomeDetailPanel"><span id="incomeChevron" aria-hidden="true">⌄</span></span></label>
+            <label class="declared-income-field"><span class="declared-income-label">Ingreso declarado (Soles)</span><span class="declared-income-control"><input id="declaredIncome" value="0.00" readonly aria-expanded="false" aria-controls="incomeDetailPanel"><span id="incomeChevron" aria-hidden="true">⌄</span></span></label>
             <label class="pilot-checkbox is-disabled"><input id="pilotConditions" type="checkbox" disabled><span>El caso cumple las condiciones del piloto</span></label>
+            <label id="jointIncomeField" class="joint-income-option joint-income-row" hidden><input id="jointIncome" type="checkbox"><span>Mancomunar</span></label>
           </div>
 
           <div id="incomeDetailPanel" class="income-detail-panel" hidden>
@@ -876,9 +872,9 @@
 
     <div id="addressValidationSuccessModal" class="modal-overlay" hidden>
       <section class="address-validation-success" role="dialog" aria-modal="true" aria-labelledby="address-valid-title">
-        <span class="address-valid-icon" aria-hidden="true">✓</span>
+        <span id="addressValidationResultIcon" class="address-valid-icon" aria-hidden="true">✓</span>
         <h2 id="address-valid-title">Dirección válida</h2>
-        <p>La dirección domiciliaria fue validada correctamente.</p>
+        <p id="addressValidationResultMessage">La dirección domiciliaria fue validada correctamente.</p>
         <button id="acceptAddressValidation" class="modal-primary-button" type="button">Aceptar</button>
       </section>
     </div>

@@ -100,7 +100,6 @@ const paternalSurname = document.querySelector("#paternalSurname");
 const maternalSurname = document.querySelector("#maternalSurname");
 const civilStatus = document.querySelector("#civilStatus");
 const birthDate = document.querySelector("#birthDate");
-const spouseRequiredMessage = document.querySelector("#spouseRequiredMessage");
 const resultView = document.querySelector("#resultView");
 const resultRequestNumber = document.querySelector("#resultRequestNumber");
 const resultDocumentNumber = document.querySelector("#resultDocumentNumber");
@@ -316,6 +315,9 @@ const confirmAddressValidation = document.querySelector("#confirmAddressValidati
 const addressMapText = document.querySelector("#addressMapText");
 const addressMapFrame = document.querySelector("#addressMapFrame");
 const addressValidationSuccessModal = document.querySelector("#addressValidationSuccessModal");
+const addressValidationResultIcon = document.querySelector("#addressValidationResultIcon");
+const addressValidationResultTitle = document.querySelector("#address-valid-title");
+const addressValidationResultMessage = document.querySelector("#addressValidationResultMessage");
 const acceptAddressValidation = document.querySelector("#acceptAddressValidation");
 const plaftDeniedModal = document.querySelector("#plaftDeniedModal");
 const plaftDeniedMessage = document.querySelector("#plaftDeniedMessage");
@@ -378,7 +380,22 @@ const personMocks = {
     birthDate: "1987-09-20",
     plaftAlert: true,
   },
+  "88888888": {
+    names: "Valeria",
+    paternalSurname: "Sánchez",
+    maternalSurname: "Rojas",
+    civilStatus: "SOLTERO",
+    birthDate: "1991-11-08",
+    addressAlert: true,
+  },
 };
+
+const addressRiskObservations = [
+  { code: "restricted-location", label: "Zona o ubicación no permitida", tone: "danger" },
+  { code: "policy-not-met", label: "No cumple política vigente", tone: "warning" },
+  { code: "income-support-required", label: "Cliente debe sustentar ingresos", tone: "info" },
+  { code: "no-payment-capacity", label: "Sin capacidad de pago", tone: "critical" },
+];
 
 const defaultSpousePerson = {
   names: "María Fernanda",
@@ -587,9 +604,8 @@ function showSimulation() {
 function resetSpouseContent() {
   spouseLoaded = false;
   spouseDocument.value = "";
-  spouseContent.innerHTML = "<p>Sin datos cargados</p>";
+  spouseContent.replaceChildren();
   spouseCard.classList.remove("has-error");
-  spouseRequiredMessage.hidden = true;
 }
 
 function resetManualPersonForm() {
@@ -618,22 +634,17 @@ function resetSimulation() {
   });
 }
 
-function setSpouseRequirement(isMarried) {
-  spouseCard.hidden = !isMarried;
+function setSpouseRequirement(isVisible) {
+  spouseCard.hidden = !isVisible;
 
-  if (!isMarried) {
+  if (!isVisible) {
     closeSpouseModal();
     resetSpouseContent();
   }
 }
 
-function markSpouseAsRequired() {
-  spouseCard.classList.add("has-error");
-  spouseRequiredMessage.hidden = false;
-}
-
 function handleCivilStatusChange() {
-  setSpouseRequirement(civilStatus.value === "CASADO");
+  if (resolvedDocument) setSpouseRequirement(true);
 }
 
 function resetResolvedPerson() {
@@ -691,7 +702,7 @@ function showConfirmationToasts(includeProductToast = false) {
 }
 
 function showCalculationToasts() {
-  const services = ["ObtenerParametrosTC", "ObtenerParametrosCA"];
+  const services = ["ObtenerParametrosTC"];
   showServiceToasts(services, services);
 }
 
@@ -754,26 +765,21 @@ function applyQualificationRule(documentNumber) {
 }
 
 function applyComplianceRule(person) {
-  const marriedWithSpouse = person.civilStatus === "CASADO" && spouseLoaded;
-  const complianceApproved = person.civilStatus !== "CASADO" || marriedWithSpouse;
+  const hasRegisteredSpouse = spouseLoaded;
   const hasPlaftAlert = Boolean(person.plaftAlert);
 
-  pepResult.textContent = complianceApproved ? "No aplica" : "Pendiente";
+  pepResult.textContent = "No aplica";
   plaftResult.textContent = hasPlaftAlert
     ? "Alerta PLAFT"
-    : complianceApproved
-    ? "Sin observaciones"
-    : "Pendiente";
+    : "Sin observaciones";
   plaftDescription.textContent = hasPlaftAlert
     ? "El cliente cuenta con observaciones PLAFT"
-    : complianceApproved
-    ? "El cliente no presenta observaciones en listas restrictivas."
-    : "La validación PLAFT se encuentra pendiente.";
+    : "El cliente no presenta observaciones en listas restrictivas.";
   plaftResult.closest(".compliance-subject")?.classList.toggle("has-plaft-alert", hasPlaftAlert);
-  pepHolderLabel.hidden = !marriedWithSpouse;
-  plaftHolderLabel.hidden = !marriedWithSpouse;
-  pepSpouseResult.hidden = !marriedWithSpouse;
-  plaftSpouseResult.hidden = !marriedWithSpouse;
+  pepHolderLabel.hidden = !hasRegisteredSpouse;
+  plaftHolderLabel.hidden = !hasRegisteredSpouse;
+  pepSpouseResult.hidden = !hasRegisteredSpouse;
+  plaftSpouseResult.hidden = !hasRegisteredSpouse;
 }
 
 function populateResultScreen(requestNumber, person, dateData, documentNumber = clientDocument.value) {
@@ -1390,7 +1396,10 @@ function renderCalculationResult(shouldScroll = true) {
   const meetsCapacity = installment <= maximumCapacity;
   const hasDeclaredIncome = parseMoney(declaredIncome.value) > 0;
   const isFullPortfolio = !meetsCapacity || hasDeclaredIncome;
-  const isJointApplication = Boolean(currentGeneratedRequest?.hasSpouse && jointIncome.checked);
+  const hasSpouse = Boolean(currentGeneratedRequest?.hasSpouse);
+  const requiresSpouseDocuments = Boolean(hasSpouse || currentGeneratedRequest?.person?.civilStatus === "CASADO");
+  const holderHasDeclaredIncome = incomeTotal(holderIncomes) > 0;
+  const spouseHasDeclaredIncome = Boolean(hasSpouse && jointIncome.checked && incomeTotal(spouseIncomes) > 0);
 
   resultTerm.textContent = selectedTerm.value || "—";
   resultTea.textContent = "12.80%";
@@ -1401,7 +1410,9 @@ function renderCalculationResult(shouldScroll = true) {
   resultPortfolio.textContent = isFullPortfolio ? "FULL" : "EXPRESS";
   resultVerification.textContent = isFullPortfolio ? "Verificación domiciliaria" : "No aplica";
   const documents = ["Copia de DNI (Titular)"];
-  if (isJointApplication) documents.push("Copia de DNI (Conyugue)");
+  if (requiresSpouseDocuments) documents.push("Copia de DNI (Conyugue)");
+  if (holderHasDeclaredIncome) documents.push("Sustento de ingresos (Titular)");
+  if (spouseHasDeclaredIncome) documents.push("Sustento de ingresos (Conyugue)");
   if (isFullPortfolio) documents.push("Recibo de servicios", "Cotización del vehículo");
   resultDocuments.replaceChildren(...documents.map((documentName) => {
     const item = document.createElement("li");
@@ -2344,12 +2355,32 @@ function closeAddressMapModal() {
 }
 
 function confirmHolderAddress() {
+  const hasAddressAlert = Boolean(currentGeneratedRequest?.person?.addressAlert);
   currentGeneratedRequest.addressValidated = true;
   currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
   addressValidationStatus.textContent = "Validada";
   addressValidationStatus.classList.add("validated");
   addressMapModal.hidden = true;
   addressMapFrame.src = "about:blank";
+  addressValidationSuccessModal.querySelector(".address-validation-success")
+    ?.classList.toggle("has-address-observation", hasAddressAlert);
+  addressValidationResultIcon.textContent = hasAddressAlert ? "!" : "✓";
+  addressValidationResultTitle.textContent = hasAddressAlert ? "Observación" : "Dirección válida";
+  addressValidationResultMessage.textContent = hasAddressAlert
+    ? "Zona peligrosa detectada\nrequiere autorización de producto para continuar"
+    : "La dirección domiciliaria fue validada correctamente.";
+
+  if (hasAddressAlert) {
+    const currentObservations = currentGeneratedRequest.observations || [];
+    const observationCodes = new Set(currentObservations.map((observation) => observation.code));
+    addressRiskObservations.forEach((observation) => {
+      if (!observationCodes.has(observation.code)) currentObservations.push({ ...observation });
+    });
+    currentGeneratedRequest.observations = currentObservations;
+    pendingSimulationObservations = [...currentObservations];
+    renderWorkflowObservations(currentObservations);
+  }
+
   addressValidationSuccessModal.hidden = false;
 }
 
@@ -2378,9 +2409,9 @@ function finalizeSimulation(person) {
     phone: clientPhone.value,
     dealer: dealerSelect.value,
     branch: simulationBranchSelect.value,
-    hasSpouse: person.civilStatus === "CASADO" && spouseLoaded,
+    hasSpouse: spouseLoaded,
     spouseDocument: spouseDocument.value,
-    spousePerson: person.civilStatus === "CASADO" && spouseLoaded ? { ...defaultSpousePerson } : null,
+    spousePerson: spouseLoaded ? { ...defaultSpousePerson } : null,
     person: { ...person },
     simulationPerson: { ...person },
     observations: [...pendingSimulationObservations],
@@ -2440,11 +2471,13 @@ function confirmSimulation() {
 
     if (mockPerson) {
       resetManualPersonForm();
-      setSpouseRequirement(mockPerson.civilStatus === "CASADO");
+      setSpouseRequirement(true);
+      simulationMessage.textContent = "";
+      return;
     } else {
       resetManualPersonForm();
       manualPersonForm.hidden = false;
-      setSpouseRequirement(false);
+      setSpouseRequirement(true);
       simulationMessage.textContent =
         "No se encontraron datos. Completa el formulario de la persona.";
       simulationMessage.classList.add("is-error");
@@ -2460,17 +2493,7 @@ function confirmSimulation() {
   }
 
   const person = mockPerson || getManualPersonData();
-  const isMarried = person.civilStatus === "CASADO";
-
-  setSpouseRequirement(isMarried);
-
-  if (isMarried && !spouseLoaded) {
-    markSpouseAsRequired();
-    simulationMessage.textContent = "Debes registrar los datos del conyugue para continuar.";
-    simulationMessage.classList.add("is-error");
-    addSpouseButton.focus();
-    return;
-  }
+  setSpouseRequirement(true);
 
   finalizeSimulation(person);
 }
@@ -2518,7 +2541,6 @@ function closeSpouseModal() {
 function renderSpouse(documentNumber) {
   spouseLoaded = true;
   spouseCard.classList.remove("has-error");
-  spouseRequiredMessage.hidden = true;
   spouseContent.replaceChildren();
 
   const record = document.createElement("div");

@@ -64,7 +64,7 @@ select:focus-visible,
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  width: min(100%, 1660px);
+  width: min(84%, 1660px);
   min-height: 88px;
   margin: 0 auto;
   padding: 20px 32px 14px;
@@ -186,10 +186,26 @@ select:focus-visible,
 
 .page-shell {
   display: grid;
-  width: min(100%, 1660px);
-  margin: 0 auto;
-  padding: 0 32px 32px;
+  grid-template-columns: minmax(0, 1fr);
+  width: 84%;
+  max-width: 1660px;
+  margin-right: auto;
+  margin-left: auto;
+  padding: 0 0 32px;
   gap: 44px;
+  justify-items: center;
+}
+
+.page-shell > .card {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.search-card {
+  overflow: hidden;
 }
 
 .card {
@@ -492,7 +508,7 @@ td {
 
 .simulation-view {
   display: grid;
-  width: min(100%, 1660px);
+  width: min(84%, 1660px);
   margin: 0 auto;
   padding: 27px 32px 42px;
   gap: 28px;
@@ -1031,7 +1047,7 @@ td {
 
 .result-view {
   display: grid;
-  width: min(100%, 1660px);
+  width: min(84%, 1660px);
   margin: 0 auto;
   padding: 28px 26px 42px;
   gap: 18px;
@@ -1383,6 +1399,32 @@ td {
   padding: 0;
   flex: 0 0 16px;
   cursor: pointer;
+}
+
+.calculation-grid label.joint-income-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  grid-column: 1 / -1;
+  grid-template-rows: none;
+  width: 100%;
+  height: 46px;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid #ccd5e2;
+  border-radius: 8px;
+  background: #fff;
+  color: #35435a;
+  font-size: 12px;
+  line-height: 1;
+  gap: 8px;
+}
+
+.joint-income-row > span {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  line-height: 1;
 }
 
 .declared-income-control input {
@@ -1819,7 +1861,7 @@ td {
 
 .solicitation-view {
   display: grid;
-  width: min(100%, 1660px);
+  width: min(84%, 1660px);
   margin: 0 auto;
   padding: 28px 26px 42px;
   gap: 24px;
@@ -3338,7 +3380,7 @@ td {
   min-width: 110px;
 }
 
-@media (min-width: 1370px) {
+@media (min-width: 1700px) {
   .filter-grid {
     grid-template-columns:
       minmax(150px, 1.12fr)
@@ -3379,6 +3421,14 @@ td {
 }
 
 @media (max-width: 950px) {
+  .app-header,
+  .page-shell,
+  .simulation-view,
+  .result-view,
+  .solicitation-view {
+    width: 100%;
+  }
+
   .vehicle-data-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3824,6 +3874,31 @@ td {
   color: #a51f2d;
 }
 .workflow-observation-item.danger > span { background: #d93649; }
+.workflow-observation-item.info {
+  border-color: #8eb9ee;
+  background: #eef6ff;
+  color: #14589b;
+}
+.workflow-observation-item.info > span { background: #2377c9; }
+.workflow-observation-item.critical {
+  border-color: #b6a4e8;
+  background: #f5f1ff;
+  color: #5c3ca1;
+}
+.workflow-observation-item.critical > span { background: #7352bd; }
+
+.address-validation-success.has-address-observation .address-valid-icon {
+  background: #fff2d8;
+  color: #d47a00;
+}
+
+.address-validation-success.has-address-observation h2 {
+  color: #9a5700;
+}
+
+#addressValidationResultMessage {
+  white-space: pre-line;
+}
 
 .compliance-subject.has-plaft-alert strong,
 .compliance-subject.has-plaft-alert small {
