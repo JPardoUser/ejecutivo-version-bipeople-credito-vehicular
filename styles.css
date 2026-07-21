@@ -3765,3 +3765,71 @@ td {
     transition-duration: 0.01ms !important;
   }
 }
+/* Observaciones persistentes del flujo Simulación / Solicitud */
+.workflow-observations-bar {
+  display: grid;
+  width: 100%;
+  padding: 15px 18px;
+  border: 1px solid #d7e0ed;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgb(26 55 99 / 7%);
+  gap: 10px;
+}
+
+.workflow-observations-bar[hidden] { display: none; }
+.workflow-observations-title {
+  color: #0b367b;
+  font-size: 12px;
+  letter-spacing: .03em;
+}
+
+.workflow-observations-list {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.workflow-observation-item {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 9px 13px;
+  border: 1px solid;
+  border-radius: 9px;
+  font-size: 12px;
+  gap: 9px;
+}
+
+.workflow-observation-item > span {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 900;
+  place-items: center;
+}
+
+.workflow-observation-item.warning {
+  border-color: #f2c56e;
+  background: #fff8e9;
+  color: #895800;
+}
+.workflow-observation-item.warning > span { background: #e69a14; }
+.workflow-observation-item.danger {
+  border-color: #f0a1a8;
+  background: #fff0f1;
+  color: #a51f2d;
+}
+.workflow-observation-item.danger > span { background: #d93649; }
+
+.compliance-subject.has-plaft-alert strong,
+.compliance-subject.has-plaft-alert small {
+  color: #bd2637;
+}
+
+@media (max-width: 720px) {
+  .workflow-observations-list { display: grid; }
+}

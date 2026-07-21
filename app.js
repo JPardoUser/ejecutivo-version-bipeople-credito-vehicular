@@ -110,6 +110,7 @@ const qualificationResult = document.querySelector("#qualificationResult");
 const qualificationDescription = document.querySelector("#qualificationDescription");
 const pepResult = document.querySelector("#pepResult");
 const plaftResult = document.querySelector("#plaftResult");
+const plaftDescription = document.querySelector("#plaftDescription");
 const pepHolderLabel = document.querySelector("#pepHolderLabel");
 const plaftHolderLabel = document.querySelector("#plaftHolderLabel");
 const pepSpouseResult = document.querySelector("#pepSpouseResult");
@@ -351,6 +352,8 @@ const confirmationServices = [
 ];
 
 const currentExecutiveName = "Luis Sequeiros";
+const workflowObservationBars = document.querySelectorAll("[data-workflow-observations]");
+let pendingSimulationObservations = [];
 
 const personMocks = {
   "11111111": {
@@ -367,6 +370,14 @@ const personMocks = {
     civilStatus: "SOLTERO",
     birthDate: "1990-01-01",
   },
+  "33333333": {
+    names: "Lucía",
+    paternalSurname: "Ramírez",
+    maternalSurname: "Castro",
+    civilStatus: "SOLTERO",
+    birthDate: "1987-09-20",
+    plaftAlert: true,
+  },
 };
 
 const defaultSpousePerson = {
@@ -379,6 +390,52 @@ const defaultSpousePerson = {
 };
 
 const qualificationMocks = {};
+
+function getWorkflowObservations(documentNumber) {
+  if (!/^\d{8}$/.test(documentNumber)) return [];
+  const mockPerson = personMocks[documentNumber];
+  const observations = [];
+
+  if (!mockPerson) {
+    observations.push({
+      code: "unregistered-person",
+      label: "Cliente no registrado en BD de personas",
+      tone: "warning",
+    });
+  }
+
+  if (mockPerson?.plaftAlert) {
+    observations.push({
+      code: "plaft-alert",
+      label: "Política PLAFT/LAFT",
+      tone: "danger",
+    });
+  }
+
+  return observations;
+}
+
+function renderWorkflowObservations(observations = pendingSimulationObservations) {
+  workflowObservationBars.forEach((bar) => {
+    bar.hidden = observations.length === 0;
+    if (observations.length === 0) {
+      bar.replaceChildren();
+      return;
+    }
+
+    bar.innerHTML = `
+      <strong class="workflow-observations-title">OBSERVACIONES</strong>
+      <div class="workflow-observations-list">
+        ${observations.map((observation) => `
+          <div class="workflow-observation-item ${observation.tone}">
+            <span aria-hidden="true">!</span>
+            <strong>${observation.label}</strong>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  });
+}
 
 const validatedSimulationFields = [
   dealerSelect,
@@ -553,6 +610,8 @@ function resetSimulation() {
   resolvedDocument = "";
   simulationMessage.textContent = "";
   simulationMessage.classList.remove("is-error");
+  pendingSimulationObservations = [];
+  renderWorkflowObservations();
   validatedSimulationFields.forEach((field) => {
     field.classList.remove("has-error");
     field.setAttribute("aria-invalid", "false");
@@ -584,6 +643,8 @@ function resetResolvedPerson() {
   setSpouseRequirement(false);
   simulationMessage.textContent = "";
   simulationMessage.classList.remove("is-error");
+  pendingSimulationObservations = [];
+  renderWorkflowObservations();
 }
 
 function clearToasts() {
@@ -695,9 +756,20 @@ function applyQualificationRule(documentNumber) {
 function applyComplianceRule(person) {
   const marriedWithSpouse = person.civilStatus === "CASADO" && spouseLoaded;
   const complianceApproved = person.civilStatus !== "CASADO" || marriedWithSpouse;
+  const hasPlaftAlert = Boolean(person.plaftAlert);
 
   pepResult.textContent = complianceApproved ? "No aplica" : "Pendiente";
-  plaftResult.textContent = complianceApproved ? "Sin observaciones" : "Pendiente";
+  plaftResult.textContent = hasPlaftAlert
+    ? "Alerta PLAFT"
+    : complianceApproved
+    ? "Sin observaciones"
+    : "Pendiente";
+  plaftDescription.textContent = hasPlaftAlert
+    ? "El cliente cuenta con observaciones PLAFT"
+    : complianceApproved
+    ? "El cliente no presenta observaciones en listas restrictivas."
+    : "La validación PLAFT se encuentra pendiente.";
+  plaftResult.closest(".compliance-subject")?.classList.toggle("has-plaft-alert", hasPlaftAlert);
   pepHolderLabel.hidden = !marriedWithSpouse;
   plaftHolderLabel.hidden = !marriedWithSpouse;
   pepSpouseResult.hidden = !marriedWithSpouse;
@@ -1043,6 +1115,9 @@ function captureSolicitationDetails() {
 
 function restoreWorkflow(workflow) {
   currentGeneratedRequest = workflow;
+  pendingSimulationObservations = workflow.observations || getWorkflowObservations(workflow.document);
+  currentGeneratedRequest.observations = [...pendingSimulationObservations];
+  renderWorkflowObservations();
   spouseLoaded = workflow.hasSpouse;
   calculationUnlocked = workflow.calculationUnlocked;
   resultCalculationTab.disabled = !calculationUnlocked;
@@ -2308,6 +2383,7 @@ function finalizeSimulation(person) {
     spousePerson: person.civilStatus === "CASADO" && spouseLoaded ? { ...defaultSpousePerson } : null,
     person: { ...person },
     simulationPerson: { ...person },
+    observations: [...pendingSimulationObservations],
     comments: [],
     lastScreen: "result",
     calculationUnlocked: false,
@@ -2325,6 +2401,7 @@ function finalizeSimulation(person) {
   };
 
   currentGeneratedRequest = workflow;
+  renderWorkflowObservations(workflow.observations);
   calculationUnlocked = false;
   resetCalculationControls();
   resetDeclaredIncomes(workflow.hasSpouse);
@@ -2355,6 +2432,8 @@ function confirmSimulation() {
   showConfirmationToasts();
   const documentNumber = clientDocument.value;
   const mockPerson = personMocks[documentNumber];
+  pendingSimulationObservations = getWorkflowObservations(documentNumber);
+  renderWorkflowObservations();
 
   if (resolvedDocument !== documentNumber) {
     resolvedDocument = documentNumber;
