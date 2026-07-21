@@ -429,6 +429,14 @@ function getWorkflowObservations(documentNumber) {
     });
   }
 
+  if (mockPerson?.addressAlert) {
+    observations.push(
+      ...addressRiskObservations
+        .filter((observation) => observation.code !== "restricted-location")
+        .map((observation) => ({ ...observation })),
+    );
+  }
+
   return observations;
 }
 
@@ -2372,13 +2380,15 @@ function confirmHolderAddress() {
 
   if (hasAddressAlert) {
     const currentObservations = currentGeneratedRequest.observations || [];
-    const observationCodes = new Set(currentObservations.map((observation) => observation.code));
-    addressRiskObservations.forEach((observation) => {
-      if (!observationCodes.has(observation.code)) currentObservations.push({ ...observation });
-    });
-    currentGeneratedRequest.observations = currentObservations;
-    pendingSimulationObservations = [...currentObservations];
-    renderWorkflowObservations(currentObservations);
+    const addressRiskCodes = new Set(addressRiskObservations.map((observation) => observation.code));
+    const otherObservations = currentObservations.filter((observation) => !addressRiskCodes.has(observation.code));
+    const updatedObservations = [
+      ...otherObservations,
+      ...addressRiskObservations.map((observation) => ({ ...observation })),
+    ];
+    currentGeneratedRequest.observations = updatedObservations;
+    pendingSimulationObservations = [...updatedObservations];
+    renderWorkflowObservations(updatedObservations);
   }
 
   addressValidationSuccessModal.hidden = false;
