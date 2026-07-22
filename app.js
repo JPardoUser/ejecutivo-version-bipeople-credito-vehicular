@@ -883,7 +883,7 @@ function populateCalculationScreen() {
 }
 
 function emptyIncome() {
-  return { category: "", profile: "", situation: "", startDate: "", ruc: "", monthlyIncome: "", annualized: "No" };
+  return { category: "", profile: "", situation: "", startDate: "", ruc: "", monthlyIncome: "", declaredIncomeType: "" };
 }
 
 function primaryIncomeMock() {
@@ -894,7 +894,7 @@ function primaryIncomeMock() {
     startDate: "2021-01-04",
     ruc: "20123456789",
     monthlyIncome: parseMoney(estimatedIncome.value).toFixed(2),
-    annualized: "No",
+    declaredIncomeType: "Con papeles",
   };
 }
 
@@ -916,7 +916,7 @@ function incomeRowMarkup(income, index, owner) {
       <label>Situación laboral<select data-field="situation"${fieldsDisabled}>${optionList(["", "Dependiente", "Independiente"], income.situation)}</select></label>
       <label>Fecha de ingreso laboral<input data-field="startDate" type="date" value="${income.startDate}"${fieldsDisabled}></label>
       <label>Ingreso neto mensual<input data-field="monthlyIncome" inputmode="decimal" placeholder="S/ 0.00" value="${income.monthlyIncome}"${fieldsDisabled}></label>
-      <label>¿Ingreso anualizado?<select data-field="annualized"${fieldsDisabled}>${optionList(["No", "Si"], income.annualized)}</select></label>
+      <label>Tipo de Ingreso declarado<select data-field="declaredIncomeType"${fieldsDisabled}>${optionList(["", "Con papeles", "Costeo"], income.declaredIncomeType || "")}</select></label>
     </div>
   </article>`;
 }
@@ -1124,14 +1124,14 @@ function validateIncomeDraft(showErrors = false) {
     const situation = entry.querySelector('[data-field="situation"]');
     const startDate = entry.querySelector('[data-field="startDate"]');
     const monthlyIncome = entry.querySelector('[data-field="monthlyIncome"]');
-    const annualized = entry.querySelector('[data-field="annualized"]');
+    const declaredIncomeType = entry.querySelector('[data-field="declaredIncomeType"]');
     validations.push(
       [category, category.value !== ""],
       [profile, profile.value !== ""],
       [situation, situation.value !== ""],
       [startDate, startDate.value !== ""],
       [monthlyIncome, parseMoney(monthlyIncome.value) > 0],
-      [annualized, annualized.value !== ""],
+      [declaredIncomeType, declaredIncomeType.value !== ""],
     );
   });
   validations.forEach(([field, valid]) => setCalculationFieldValidity(field, valid, showErrors));
@@ -2563,14 +2563,14 @@ function validateCalculationRequirements(showErrors = false) {
       const situation = entry.querySelector('[data-field="situation"]');
       const startDate = entry.querySelector('[data-field="startDate"]');
       const monthlyIncome = entry.querySelector('[data-field="monthlyIncome"]');
-      const annualized = entry.querySelector('[data-field="annualized"]');
+      const declaredIncomeType = entry.querySelector('[data-field="declaredIncomeType"]');
       validations.push(
         [category, category.value !== ""],
         [profile, profile.value !== ""],
         [situation, situation.value !== ""],
         [startDate, startDate.value !== ""],
         [monthlyIncome, parseMoney(monthlyIncome.value) > 0],
-        [annualized, annualized.value !== ""],
+        [declaredIncomeType, declaredIncomeType.value !== ""],
       );
     });
   }
@@ -3523,7 +3523,7 @@ function initializeEFE004Workflow() {
       startDate: "2020-03-02",
       ruc: "20123456789",
       monthlyIncome: "5850.00",
-      annualized: "No",
+      declaredIncomeType: "Con papeles",
     }],
     spouseIncomes: [],
     holderPrimaryIncomeLoaded: true,
