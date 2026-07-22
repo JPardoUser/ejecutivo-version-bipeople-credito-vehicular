@@ -289,6 +289,9 @@ const signatureExpenses = document.querySelector("#signatureExpenses");
 const shippingExpenses = document.querySelector("#shippingExpenses");
 const declaredIncome = document.querySelector("#declaredIncome");
 const estimatedIncome = document.querySelector("#estimatedIncome");
+const preapprovedAmount = document.querySelector("#preapprovedAmount");
+const newPreapprovedAmountField = document.querySelector("#newPreapprovedAmountField");
+const newPreapprovedAmount = document.querySelector("#newPreapprovedAmount");
 const jointIncomeField = document.querySelector("#jointIncomeField");
 const jointIncome = document.querySelector("#jointIncome");
 const incomeChevron = document.querySelector("#incomeChevron");
@@ -296,6 +299,9 @@ const pilotConditions = document.querySelector("#pilotConditions");
 const pilotConditionsField = pilotConditions.closest(".pilot-checkbox");
 const incomeDetailPanel = document.querySelector("#incomeDetailPanel");
 const closeIncomePanel = document.querySelector("#closeIncomePanel");
+const cancelIncomeChanges = document.querySelector("#cancelIncomeChanges");
+const saveIncomeChanges = document.querySelector("#saveIncomeChanges");
+const incomeSaveMessage = document.querySelector("#incomeSaveMessage");
 const holderIncomeRows = document.querySelector("#holderIncomeRows");
 const spouseIncomeRows = document.querySelector("#spouseIncomeRows");
 const spouseIncomeSection = document.querySelector("#spouseIncomeSection");
@@ -341,6 +347,9 @@ let calculationUnlocked = false;
 let currentGeneratedRequest = null;
 let holderIncomes = [];
 let spouseIncomes = [];
+let savedHolderIncomes = [];
+let savedSpouseIncomes = [];
+let incomeChangesPending = false;
 let holderPrimaryIncomeLoaded = false;
 let spousePrimaryIncomeLoaded = false;
 let holderPrimaryEditing = false;
@@ -861,17 +870,65 @@ function incomeTotal(incomes) {
   return incomes.reduce((total, income) => total + (Number(income.monthlyIncome) || 0), 0);
 }
 
-function updateDeclaredIncomeTotal() {
+function getDraftIncomeTotals() {
   const holderTotal = incomeTotal(holderIncomes);
   const spouseTotal = currentGeneratedRequest?.hasSpouse && jointIncome.checked ? incomeTotal(spouseIncomes) : 0;
-  const total = holderTotal + spouseTotal;
+  return { holderTotal, spouseTotal, total: holderTotal + spouseTotal };
+}
+
+function updateIncomeDraftTotals() {
+  const { holderTotal, spouseTotal, total } = getDraftIncomeTotals();
   holderIncomeTotal.textContent = formatSoles(holderTotal);
   spouseIncomeTotal.textContent = formatSoles(spouseTotal);
   combinedIncomeTotal.textContent = formatSoles(total);
+}
+
+function commitDeclaredIncomeTotal() {
+  const { total } = getDraftIncomeTotals();
+  updateIncomeDraftTotals();
   declaredIncome.value = total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   pilotConditions.disabled = total <= 0;
   pilotConditionsField.classList.toggle("is-disabled", total <= 0);
   if (total <= 0) pilotConditions.checked = false;
+  updateNewPreapprovedAmount();
+}
+
+function updateNewPreapprovedAmount() {
+  const declaredAmount = parseMoney(declaredIncome.value);
+  const estimatedAmount = parseMoney(estimatedIncome.value);
+  const shouldShow = declaredAmount > estimatedAmount;
+
+  newPreapprovedAmountField.hidden = !shouldShow;
+  if (!shouldShow) {
+    newPreapprovedAmount.value = "";
+    return;
+  }
+
+  const previousAmount = parseMoney(preapprovedAmount.textContent);
+  const additionalCapacity = Math.max(1000, (declaredAmount - estimatedAmount) * 12);
+  const calculatedAmount = previousAmount + additionalCapacity;
+  newPreapprovedAmount.value = `S/. ${calculatedAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function setIncomeChangesPending(pending) {
+  const wasPending = incomeChangesPending;
+  incomeChangesPending = pending;
+  cancelIncomeChanges.disabled = !pending;
+  saveIncomeChanges.disabled = !pending;
+  if (pending && !wasPending) incomeSaveMessage.textContent = "";
+  if (!pending) incomeDetailPanel.classList.remove("has-unsaved-changes");
+}
+
+function markIncomeChangesPending() {
+  setIncomeChangesPending(true);
+  updateIncomeDraftTotals();
+  invalidateFinancingResults();
+}
+
+function showUnsavedIncomeWarning() {
+  if (!incomeChangesPending) return;
+  incomeDetailPanel.classList.add("has-unsaved-changes");
+  incomeSaveMessage.textContent = "Guarda o cancela los cambios realizados en los ingresos antes de continuar.";
 }
 
 function renderIncomeRows() {
@@ -879,7 +936,8 @@ function renderIncomeRows() {
   spouseIncomeRows.innerHTML = spouseIncomes.map((income, index) => incomeRowMarkup(income, index, "spouse")).join("");
   addHolderIncome.disabled = holderIncomes.length >= 2;
   addSpouseIncome.disabled = spouseIncomes.length >= 2;
-  updateDeclaredIncomeTotal();
+  updateIncomeDraftTotals();
+  if (!incomeChangesPending) commitDeclaredIncomeTotal();
   if (currentGeneratedRequest) updateCalculateAvailability();
 }
 
@@ -890,6 +948,9 @@ function resetDeclaredIncomes(hasSpouse) {
   spousePrimaryIncomeLoaded = false;
   holderPrimaryEditing = false;
   holderPrimaryBackup = null;
+  savedHolderIncomes = cloneIncomeList(holderIncomes);
+  savedSpouseIncomes = cloneIncomeList(spouseIncomes);
+  setIncomeChangesPending(false);
   jointIncomeField.hidden = !hasSpouse;
   jointIncome.checked = false;
   spouseIncomeSection.hidden = true;
@@ -912,6 +973,10 @@ function syncJointIncomeFields() {
 
 function toggleIncomePanel(forceOpen, shouldInvalidate = true) {
   const open = typeof forceOpen === "boolean" ? forceOpen : incomeDetailPanel.hidden;
+  if (!open && incomeChangesPending) {
+    showUnsavedIncomeWarning();
+    return;
+  }
   if (open && shouldInvalidate) invalidateFinancingResults();
   if (open && !holderPrimaryIncomeLoaded) {
     holderIncomes = [emptyIncome()];
@@ -928,6 +993,7 @@ function addIncome(owner) {
   const incomes = owner === "holder" ? holderIncomes : spouseIncomes;
   if (incomes.length >= 2) return;
   incomes.push(emptyIncome());
+  setIncomeChangesPending(true);
   renderIncomeRows();
   invalidateFinancingResults();
 }
@@ -941,7 +1007,7 @@ function handleIncomeField(event) {
   if (field === "ruc") event.target.value = event.target.value.replace(/\D/g, "").slice(0, 11);
   if (field === "monthlyIncome") sanitizeTwoDecimalInput(event);
   income[field] = event.target.value;
-  if (field === "monthlyIncome") updateDeclaredIncomeTotal();
+  markIncomeChangesPending();
   updateCalculateAvailability();
 }
 
@@ -969,6 +1035,7 @@ function handleIncomeClick(event) {
   if (!button) return;
   const incomes = button.dataset.removeIncome === "holder" ? holderIncomes : spouseIncomes;
   incomes.splice(Number(button.dataset.index), 1);
+  setIncomeChangesPending(true);
   renderIncomeRows();
   invalidateFinancingResults();
 }
@@ -979,7 +1046,73 @@ function formatIncomeAmount(event) {
   const entry = event.target.closest(".income-entry");
   const incomes = entry.dataset.owner === "holder" ? holderIncomes : spouseIncomes;
   incomes[Number(entry.dataset.index)].monthlyIncome = event.target.value;
-  updateDeclaredIncomeTotal();
+  markIncomeChangesPending();
+}
+
+function getVisibleIncomeEntries() {
+  return [
+    ...holderIncomeRows.querySelectorAll(".income-entry"),
+    ...(spouseIncomeSection.hidden ? [] : spouseIncomeRows.querySelectorAll(".income-entry")),
+  ];
+}
+
+function validateIncomeDraft(showErrors = false) {
+  const validations = [];
+  getVisibleIncomeEntries().forEach((entry) => {
+    const category = entry.querySelector('[data-field="category"]');
+    const profile = entry.querySelector('[data-field="profile"]');
+    const situation = entry.querySelector('[data-field="situation"]');
+    const startDate = entry.querySelector('[data-field="startDate"]');
+    const ruc = entry.querySelector('[data-field="ruc"]');
+    const monthlyIncome = entry.querySelector('[data-field="monthlyIncome"]');
+    const annualized = entry.querySelector('[data-field="annualized"]');
+    validations.push(
+      [category, category.value !== ""],
+      [profile, profile.value !== ""],
+      [situation, situation.value !== ""],
+      [startDate, startDate.value !== ""],
+      [ruc, /^\d{11}$/.test(ruc.value)],
+      [monthlyIncome, parseMoney(monthlyIncome.value) > 0],
+      [annualized, annualized.value !== ""],
+    );
+  });
+  validations.forEach(([field, valid]) => setCalculationFieldValidity(field, valid, showErrors));
+  const firstInvalid = validations.find(([, valid]) => !valid);
+  if (showErrors && firstInvalid) firstInvalid[0].focus();
+  return validations.length > 0 && !firstInvalid;
+}
+
+function saveIncomeDraft() {
+  if (!incomeChangesPending) return;
+  if (!validateIncomeDraft(true)) {
+    incomeDetailPanel.classList.add("has-unsaved-changes");
+    incomeSaveMessage.textContent = "Completa los campos de ingresos resaltados antes de guardar.";
+    return;
+  }
+  savedHolderIncomes = cloneIncomeList(holderIncomes);
+  savedSpouseIncomes = cloneIncomeList(spouseIncomes);
+  setIncomeChangesPending(false);
+  commitDeclaredIncomeTotal();
+  incomeSaveMessage.textContent = "Datos de ingresos guardados.";
+  invalidateFinancingResults();
+  if (currentGeneratedRequest) {
+    currentGeneratedRequest.holderIncomes = cloneIncomeList(savedHolderIncomes);
+    currentGeneratedRequest.spouseIncomes = cloneIncomeList(savedSpouseIncomes);
+  }
+}
+
+function cancelIncomeDraft() {
+  holderIncomes = [emptyIncome()];
+  spouseIncomes = currentGeneratedRequest?.hasSpouse ? [emptyIncome()] : [];
+  savedHolderIncomes = cloneIncomeList(holderIncomes);
+  savedSpouseIncomes = cloneIncomeList(spouseIncomes);
+  holderPrimaryIncomeLoaded = true;
+  spousePrimaryIncomeLoaded = Boolean(currentGeneratedRequest?.hasSpouse && jointIncome.checked);
+  setIncomeChangesPending(false);
+  renderIncomeRows();
+  commitDeclaredIncomeTotal();
+  incomeSaveMessage.textContent = "";
+  invalidateFinancingResults();
 }
 
 function cloneIncomeList(incomes) {
@@ -1065,8 +1198,8 @@ function saveCurrentWorkflow(lastScreen) {
   currentGeneratedRequest.lastScreen = lastScreen;
   currentGeneratedRequest.calculationUnlocked = calculationUnlocked;
   currentGeneratedRequest.controls = captureCalculationControls();
-  currentGeneratedRequest.holderIncomes = cloneIncomeList(holderIncomes);
-  currentGeneratedRequest.spouseIncomes = cloneIncomeList(spouseIncomes);
+  currentGeneratedRequest.holderIncomes = cloneIncomeList(incomeChangesPending ? savedHolderIncomes : holderIncomes);
+  currentGeneratedRequest.spouseIncomes = cloneIncomeList(incomeChangesPending ? savedSpouseIncomes : spouseIncomes);
   currentGeneratedRequest.holderPrimaryIncomeLoaded = holderPrimaryIncomeLoaded;
   currentGeneratedRequest.spousePrimaryIncomeLoaded = spousePrimaryIncomeLoaded;
   currentGeneratedRequest.holderPrimaryEditing = holderPrimaryEditing;
@@ -1141,6 +1274,9 @@ function restoreWorkflow(workflow) {
 
   holderIncomes = cloneIncomeList(workflow.holderIncomes || [emptyIncome()]);
   spouseIncomes = workflow.hasSpouse ? cloneIncomeList(workflow.spouseIncomes || [emptyIncome()]) : [];
+  savedHolderIncomes = cloneIncomeList(holderIncomes);
+  savedSpouseIncomes = cloneIncomeList(spouseIncomes);
+  setIncomeChangesPending(false);
   holderPrimaryIncomeLoaded = Boolean(workflow.holderPrimaryIncomeLoaded);
   spousePrimaryIncomeLoaded = Boolean(workflow.spousePrimaryIncomeLoaded);
   holderPrimaryEditing = Boolean(workflow.holderPrimaryEditing);
@@ -1153,7 +1289,7 @@ function restoreWorkflow(workflow) {
   simulateButton.hidden = !workflow.simulateVisible;
   paymentDay.disabled = !workflow.simulateVisible;
   simulateButton.disabled = paymentDay.value === "";
-  updateDeclaredIncomeTotal();
+  commitDeclaredIncomeTotal();
   calculationResultCard.hidden = !workflow.calculationResultVisible;
   if (workflow.calculationResultVisible) renderCalculationResult(false);
   toggleIncomePanel(Boolean(workflow.incomePanelOpen), false);
@@ -1339,6 +1475,11 @@ function formatInitialPayment() {
 }
 
 function calculateFinancing() {
+  if (incomeChangesPending) {
+    showUnsavedIncomeWarning();
+    calculationValidationMessage.textContent = "Guarda o cancela los cambios de ingresos antes de calcular.";
+    return;
+  }
   if (!validateCalculationRequirements(true)) {
     calculationValidationMessage.textContent = "Completa los campos requeridos resaltados para calcular.";
     return;
@@ -1405,7 +1546,7 @@ function renderCalculationResult(shouldScroll = true) {
   const hasDeclaredIncome = parseMoney(declaredIncome.value) > 0;
   const isFullPortfolio = !meetsCapacity || hasDeclaredIncome;
   const hasSpouse = Boolean(currentGeneratedRequest?.hasSpouse);
-  const requiresSpouseDocuments = Boolean(hasSpouse || currentGeneratedRequest?.person?.civilStatus === "CASADO");
+  const requiresSpouseDocuments = Boolean(hasSpouse && currentGeneratedRequest?.spouseDocument);
   const holderHasDeclaredIncome = incomeTotal(holderIncomes) > 0;
   const spouseHasDeclaredIncome = Boolean(hasSpouse && jointIncome.checked && incomeTotal(spouseIncomes) > 0);
 
@@ -2714,6 +2855,11 @@ spouseDocument.addEventListener("input", keepOnlyDigits);
 vehiclePrice.addEventListener("input", sanitizePriceInput);
 vehiclePrice.addEventListener("focus", unformatVehiclePrice);
 vehiclePrice.addEventListener("blur", formatVehiclePrice);
+vehiclePrice.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  formatVehiclePrice();
+});
 confirmSimulationButton.addEventListener("click", confirmSimulation);
 simulationForm.addEventListener("keydown", (event) => {
   if (event.key === "Enter") event.preventDefault();
@@ -2970,6 +3116,8 @@ declaredIncome.addEventListener("keydown", (event) => {
 });
 incomeChevron.addEventListener("click", () => toggleIncomePanel());
 closeIncomePanel.addEventListener("click", () => toggleIncomePanel(false));
+cancelIncomeChanges.addEventListener("click", cancelIncomeDraft);
+saveIncomeChanges.addEventListener("click", saveIncomeDraft);
 addHolderIncome.addEventListener("click", () => addIncome("holder"));
 addSpouseIncome.addEventListener("click", () => addIncome("spouse"));
 holderIncomeRows.addEventListener("input", handleIncomeField);
@@ -2981,6 +3129,9 @@ spouseIncomeRows.addEventListener("change", handleIncomeField);
 spouseIncomeRows.addEventListener("click", handleIncomeClick);
 spouseIncomeRows.addEventListener("focusout", formatIncomeAmount);
 jointIncome.addEventListener("change", syncJointIncomeFields);
+document.addEventListener("pointerdown", (event) => {
+  if (incomeChangesPending && !incomeDetailPanel.contains(event.target)) showUnsavedIncomeWarning();
+});
 closeSuccessModalButton.addEventListener("click", closeSuccessModal);
 acceptSuccessButton.addEventListener("click", closeSuccessModal);
 civilStatus.addEventListener("change", handleCivilStatusChange);

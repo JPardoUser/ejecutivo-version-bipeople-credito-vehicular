@@ -1274,6 +1274,17 @@ td {
   color: #174399;
 }
 
+.calculation-footer-grid .new-preapproved-amount-field {
+  color: #087a43;
+}
+
+.calculation-footer-grid .new-preapproved-amount-field input[readonly] {
+  border-color: #78d6a5;
+  background: #ecfbf3;
+  color: #087a43;
+  font-weight: 800;
+}
+
 .calculation-grid input:focus,
 .calculation-grid select:focus,
 .calculation-footer-grid input:focus,
@@ -1456,6 +1467,17 @@ td {
   background: #fff;
 }
 
+.income-detail-panel.has-unsaved-changes {
+  border-color: #df3140;
+  box-shadow: 0 0 0 3px rgb(223 49 64 / 10%);
+}
+
+.income-detail-panel.has-unsaved-changes .income-entry input,
+.income-detail-panel.has-unsaved-changes .income-entry select {
+  border-color: #df3140;
+  background: #fff7f8;
+}
+
 .income-detail-heading {
   display: flex;
   align-items: center;
@@ -1503,6 +1525,30 @@ td {
   border: 1px solid #dce3ec;
   border-radius: 12px;
   background: #fff;
+}
+
+.income-form-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  padding: 0 16px 16px;
+  gap: 10px;
+}
+
+.income-form-actions p {
+  margin: 0;
+  color: #c12636;
+  font-size: 11px;
+}
+
+.income-form-actions button {
+  min-width: 110px;
+  min-height: 40px;
+}
+
+.income-form-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
 }
 
 .income-subject-card + .income-subject-card {
@@ -3907,4 +3953,12 @@ td {
 
 @media (max-width: 720px) {
   .workflow-observations-list { display: grid; }
+
+  .income-form-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .income-form-actions p {
+    grid-column: 1 / -1;
+  }
 }

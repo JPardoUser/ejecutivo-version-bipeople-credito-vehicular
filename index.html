@@ -385,7 +385,7 @@
 
       <section class="preapproved-card">
         <span>Monto preaprobado</span>
-        <strong>S/ 250,000.00</strong>
+        <strong id="preapprovedAmount">S/ 250,000.00</strong>
         <p>Cuota inicial mínima: <b>10%</b> <i></i> Plazo máximo: <b>60 meses</b></p>
       </section>
 
@@ -540,6 +540,11 @@
               </section>
             </div>
             <div class="combined-income-total"><span>Total de ingresos declarados</span><strong id="combinedIncomeTotal">S/ 0.00</strong></div>
+            <div class="income-form-actions">
+              <p id="incomeSaveMessage" aria-live="polite"></p>
+              <button id="cancelIncomeChanges" class="secondary-button" type="button" disabled>Cancelar</button>
+              <button id="saveIncomeChanges" class="confirm-button" type="button" disabled>Guardar</button>
+            </div>
           </div>
           <div class="income-calculate-action">
             <p id="calculationValidationMessage" class="calculation-validation-message" aria-live="polite"></p>
@@ -549,6 +554,7 @@
 
         <div class="calculation-footer-grid">
           <label>N° de teléfono<input id="calculationPhone" type="tel" inputmode="numeric" maxlength="9" pattern="9[0-9]{8}" placeholder="Ingrese teléfono"></label>
+          <label id="newPreapprovedAmountField" class="new-preapproved-amount-field" hidden>Nuevo monto preaprobado<input id="newPreapprovedAmount" readonly></label>
           <label>Monto a financiar<input id="amountToFinance" placeholder="S/ 0.00" readonly></label>
           <label class="day-payment-field">Día de pago<select id="paymentDay" disabled><option value="" selected>Seleccionar</option><option>02</option><option>05</option><option>10</option><option>15</option><option>20</option><option>25</option></select><button id="simulateButton" class="confirm-button simulate-button" type="button" hidden disabled>Simular</button></label>
         </div>
