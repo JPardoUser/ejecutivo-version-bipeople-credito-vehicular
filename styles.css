@@ -605,12 +605,40 @@ td {
 }
 
 .manual-person-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   margin-bottom: 20px;
+  gap: 18px;
 }
 
 .manual-person-heading h3,
 .manual-person-heading p {
   margin: 0;
+}
+
+.manual-person-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.manual-person-actions button {
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid #174dff;
+  border-radius: 8px;
+  background: #fff;
+  color: #174dff;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.manual-person-actions .confirm-button {
+  background: var(--bank-blue);
+  color: #fff;
 }
 
 .manual-person-heading h3 {
@@ -1624,6 +1652,13 @@ td {
   box-shadow: 0 0 0 3px rgba(223, 49, 64, 0.1);
 }
 
+.holder-data-grid input.has-error,
+.holder-data-grid select.has-error {
+  border-color: #df3140;
+  background: #fff5f6;
+  box-shadow: 0 0 0 3px rgba(223, 49, 64, 0.1);
+}
+
 .income-entry-grid input:disabled,
 .income-entry-grid select:disabled {
   border-color: #d9e0e9;
@@ -1739,7 +1774,7 @@ td {
 }
 
 .calculation-footer-grid {
-  grid-template-columns: 1fr 1fr 0.72fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: start;
   margin-top: 22px;
   padding-top: 20px;
@@ -2116,6 +2151,10 @@ td {
   gap: 18px;
 }
 
+.holder-information-card .vehicle-edit-header {
+  justify-content: flex-end;
+}
+
 .holder-information-card h3 {
   display: flex;
   align-items: center;
@@ -2149,6 +2188,13 @@ td {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.section-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
 }
 
 .holder-edit-actions button:last-child:not([hidden]) {
@@ -3448,9 +3494,12 @@ td {
 
   .calculation-grid,
   .calculation-grid.three-columns,
-  .calculation-footer-grid,
   .vehicle-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .calculation-footer-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .income-grid {
@@ -3622,6 +3671,15 @@ td {
 
   .simulation-card {
     padding: 22px 16px;
+  }
+
+  .manual-person-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manual-person-actions {
+    justify-content: flex-end;
   }
 
   .simulation-selects,

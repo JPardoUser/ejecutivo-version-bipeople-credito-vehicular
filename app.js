@@ -100,6 +100,8 @@ const paternalSurname = document.querySelector("#paternalSurname");
 const maternalSurname = document.querySelector("#maternalSurname");
 const civilStatus = document.querySelector("#civilStatus");
 const birthDate = document.querySelector("#birthDate");
+const saveManualPerson = document.querySelector("#saveManualPerson");
+const editManualPerson = document.querySelector("#editManualPerson");
 const resultView = document.querySelector("#resultView");
 const resultRequestNumber = document.querySelector("#resultRequestNumber");
 const resultDocumentNumber = document.querySelector("#resultDocumentNumber");
@@ -178,6 +180,9 @@ const holderAddress = document.querySelector("#holderAddress");
 const holderAddressReference = document.querySelector("#holderAddressReference");
 const addressValidationStatus = document.querySelector("#addressValidationStatus");
 const validateAddressButton = document.querySelector("#validateAddressButton");
+const editHolderAddress = document.querySelector("#editHolderAddress");
+const cancelHolderAddress = document.querySelector("#cancelHolderAddress");
+const saveHolderAddress = document.querySelector("#saveHolderAddress");
 const employmentCategory = document.querySelector("#employmentCategory");
 const employerRuc = document.querySelector("#employerRuc");
 const workplaceName = document.querySelector("#workplaceName");
@@ -188,6 +193,9 @@ const employmentPositionLabel = document.querySelector("#employmentPositionLabel
 const employmentStartDate = document.querySelector("#employmentStartDate");
 const employmentCurrency = document.querySelector("#employmentCurrency");
 const monthlyNetIncome = document.querySelector("#monthlyNetIncome");
+const editHolderEmployment = document.querySelector("#editHolderEmployment");
+const cancelHolderEmployment = document.querySelector("#cancelHolderEmployment");
+const saveHolderEmployment = document.querySelector("#saveHolderEmployment");
 const solicitationSpouseAccordion = document.querySelector("#solicitationSpouseAccordion");
 const solicitationSpouseName = document.querySelector("#solicitationSpouseName");
 const spouseAccordionStatus = document.querySelector("#spouseAccordionStatus");
@@ -231,6 +239,9 @@ const vehicleEngineNumber = document.querySelector("#vehicleEngineNumber");
 const documentaryVehicleFields = document.querySelectorAll(".documentary-vehicle-field");
 const documentaryVehicleActions = document.querySelector("#documentaryVehicleActions");
 const generateGuaranteeButton = document.querySelector("#generateGuaranteeButton");
+const editVehicleData = document.querySelector("#editVehicleData");
+const cancelVehicleData = document.querySelector("#cancelVehicleData");
+const saveVehicleData = document.querySelector("#saveVehicleData");
 const creditExchangeRate = document.querySelector("#creditExchangeRate");
 const creditVehiclePrice = document.querySelector("#creditVehiclePrice");
 const creditInitialPayment = document.querySelector("#creditInitialPayment");
@@ -342,6 +353,7 @@ const riskSubmissionSuccessModal = document.querySelector("#riskSubmissionSucces
 const acceptRiskSubmission = document.querySelector("#acceptRiskSubmission");
 
 let resolvedDocument = "";
+let manualPersonSaved = false;
 let spouseLoaded = false;
 let calculationUnlocked = false;
 let currentGeneratedRequest = null;
@@ -373,6 +385,7 @@ const personMocks = {
     maternalSurname: "Quispe",
     civilStatus: "CASADO",
     birthDate: "1988-06-15",
+    dollarDebtExposure: true,
   },
   "22222222": {
     names: "Javier",
@@ -400,10 +413,10 @@ const personMocks = {
 };
 
 const addressRiskObservations = [
-  { code: "restricted-location", label: "Zona o ubicación no permitida", tone: "danger" },
-  { code: "policy-not-met", label: "No cumple política vigente", tone: "warning" },
-  { code: "income-support-required", label: "Cliente debe sustentar ingresos", tone: "info" },
-  { code: "no-payment-capacity", label: "Sin capacidad de pago", tone: "critical" },
+  { code: "restricted-location", label: "ObsRech14: Microzonas peligrosas", tone: "danger" },
+  { code: "policy-not-met", label: "ObsRech19: Convenio - Con Deuda en Judicial último RCC.", tone: "warning" },
+  { code: "income-support-required", label: "ObsRech300: INCREMENTO DE INGRESO PERMITIDO", tone: "info" },
+  { code: "no-payment-capacity", label: "ObsRech27: Sobreendeudamiento", tone: "critical" },
 ];
 
 const defaultSpousePerson = {
@@ -425,7 +438,7 @@ function getWorkflowObservations(documentNumber) {
   if (!mockPerson) {
     observations.push({
       code: "unregistered-person",
-      label: "Cliente no registrado en BD de personas",
+      label: "ObsRech01: Todo cliente filtrado que no se encuentre en nuestra base interna de personas.",
       tone: "warning",
     });
   }
@@ -433,8 +446,16 @@ function getWorkflowObservations(documentNumber) {
   if (mockPerson?.plaftAlert) {
     observations.push({
       code: "plaft-alert",
-      label: "Política PLAFT/LAFT",
+      label: "ObsRech03: LAFT",
       tone: "danger",
+    });
+  }
+
+  if (mockPerson?.dollarDebtExposure) {
+    observations.push({
+      code: "dollar-debt-exposure",
+      label: "ObsRech312: Cliente con exposición de deuda en dólares",
+      tone: "info",
     });
   }
 
@@ -625,13 +646,44 @@ function resetSpouseContent() {
   spouseCard.classList.remove("has-error");
 }
 
+function updateSimulationConfirmAvailability() {
+  confirmSimulationButton.disabled = !manualPersonForm.hidden && !manualPersonSaved;
+}
+
+function setManualPersonEditing(editing) {
+  manualPersonFields.forEach((field) => { field.disabled = !editing; });
+  saveManualPerson.hidden = !editing;
+  editManualPerson.hidden = editing;
+  if (editing) manualPersonSaved = false;
+  updateSimulationConfirmAvailability();
+}
+
+function saveManualPersonData() {
+  if (!validateManualPersonForm()) {
+    simulationMessage.textContent = "Completa los datos requeridos de la persona antes de guardar.";
+    simulationMessage.classList.add("is-error");
+    return;
+  }
+  manualPersonSaved = true;
+  manualPersonFields.forEach((field) => { field.disabled = true; });
+  saveManualPerson.hidden = true;
+  editManualPerson.hidden = false;
+  simulationMessage.textContent = "Datos de la persona guardados.";
+  simulationMessage.classList.remove("is-error");
+  updateSimulationConfirmAvailability();
+}
+
 function resetManualPersonForm() {
   manualPersonFields.forEach((field) => {
     field.value = "";
     field.classList.remove("has-error");
     field.setAttribute("aria-invalid", "false");
   });
+  manualPersonSaved = false;
+  saveManualPerson.hidden = false;
+  editManualPerson.hidden = true;
   manualPersonForm.hidden = true;
+  updateSimulationConfirmAvailability();
 }
 
 function resetSimulation() {
@@ -851,11 +903,10 @@ function incomeRowMarkup(income, index, owner) {
   return `<article class="income-entry" data-owner="${owner}" data-index="${index}">
     <div class="income-entry-heading"><span>${incomeLabel}</span>${primaryActions}</div>
     <div class="income-entry-grid">
-      <label>Tipo de categoría<select data-field="category"${fieldsDisabled}>${optionList(["", "1ra categoría", "2da categoría", "3ra categoría", "4ta categoría", "5ta categoría"], income.category)}</select></label>
+      <label>Tipo de categoría<select data-field="category"${fieldsDisabled}>${optionList(["", "Sin categoría", "1ra categoría", "2da categoría", "3ra categoría", "4ta categoría", "5ta categoría"], income.category)}</select></label>
       <label>Perfil<select data-field="profile"${fieldsDisabled}>${optionList(["", "Formal", "Informal"], income.profile)}</select></label>
       <label>Situación laboral<select data-field="situation"${fieldsDisabled}>${optionList(["", "Dependiente", "Independiente"], income.situation)}</select></label>
       <label>Fecha de ingreso laboral<input data-field="startDate" type="date" value="${income.startDate}"${fieldsDisabled}></label>
-      <label>RUC del empleador<input data-field="ruc" inputmode="numeric" maxlength="11" placeholder="RUC de 11 dígitos" value="${income.ruc}"${fieldsDisabled}></label>
       <label>Ingreso neto mensual<input data-field="monthlyIncome" inputmode="decimal" placeholder="S/ 0.00" value="${income.monthlyIncome}"${fieldsDisabled}></label>
       <label>¿Ingreso anualizado?<select data-field="annualized"${fieldsDisabled}>${optionList(["No", "Si"], income.annualized)}</select></label>
     </div>
@@ -893,12 +944,12 @@ function commitDeclaredIncomeTotal() {
   updateNewPreapprovedAmount();
 }
 
-function updateNewPreapprovedAmount() {
+function updateNewPreapprovedAmount(reveal = false) {
   const declaredAmount = parseMoney(declaredIncome.value);
   const estimatedAmount = parseMoney(estimatedIncome.value);
   const shouldShow = declaredAmount > estimatedAmount;
 
-  newPreapprovedAmountField.hidden = !shouldShow;
+  newPreapprovedAmountField.hidden = !(shouldShow && reveal);
   if (!shouldShow) {
     newPreapprovedAmount.value = "";
     return;
@@ -951,7 +1002,7 @@ function resetDeclaredIncomes(hasSpouse) {
   savedHolderIncomes = cloneIncomeList(holderIncomes);
   savedSpouseIncomes = cloneIncomeList(spouseIncomes);
   setIncomeChangesPending(false);
-  jointIncomeField.hidden = !hasSpouse;
+  jointIncomeField.hidden = true;
   jointIncome.checked = false;
   spouseIncomeSection.hidden = true;
   incomeDetailPanel.hidden = true;
@@ -984,6 +1035,7 @@ function toggleIncomePanel(forceOpen, shouldInvalidate = true) {
     renderIncomeRows();
   }
   incomeDetailPanel.hidden = !open;
+  jointIncomeField.hidden = !(open && currentGeneratedRequest?.hasSpouse);
   declaredIncome.setAttribute("aria-expanded", String(open));
   incomeChevron.textContent = open ? "⌃" : "⌄";
   updateCalculateAvailability();
@@ -1063,7 +1115,6 @@ function validateIncomeDraft(showErrors = false) {
     const profile = entry.querySelector('[data-field="profile"]');
     const situation = entry.querySelector('[data-field="situation"]');
     const startDate = entry.querySelector('[data-field="startDate"]');
-    const ruc = entry.querySelector('[data-field="ruc"]');
     const monthlyIncome = entry.querySelector('[data-field="monthlyIncome"]');
     const annualized = entry.querySelector('[data-field="annualized"]');
     validations.push(
@@ -1071,7 +1122,6 @@ function validateIncomeDraft(showErrors = false) {
       [profile, profile.value !== ""],
       [situation, situation.value !== ""],
       [startDate, startDate.value !== ""],
-      [ruc, /^\d{11}$/.test(ruc.value)],
       [monthlyIncome, parseMoney(monthlyIncome.value) > 0],
       [annualized, annualized.value !== ""],
     );
@@ -1149,6 +1199,7 @@ function resetCalculationControls() {
   initialPayment.value = "";
   initialPaymentPercentage.textContent = "0.00%";
   amountToFinance.value = "";
+  updateNewPreapprovedAmount(false);
   simulateButton.hidden = true;
   simulateButton.disabled = true;
   paymentDay.disabled = true;
@@ -1281,7 +1332,7 @@ function restoreWorkflow(workflow) {
   spousePrimaryIncomeLoaded = Boolean(workflow.spousePrimaryIncomeLoaded);
   holderPrimaryEditing = Boolean(workflow.holderPrimaryEditing);
   holderPrimaryBackup = workflow.holderPrimaryBackup ? { ...workflow.holderPrimaryBackup } : null;
-  jointIncomeField.hidden = !workflow.hasSpouse;
+  jointIncomeField.hidden = true;
   spouseIncomeSection.hidden = true;
   renderIncomeRows();
   restoreCalculationControls(workflow.controls);
@@ -1290,6 +1341,7 @@ function restoreWorkflow(workflow) {
   paymentDay.disabled = !workflow.simulateVisible;
   simulateButton.disabled = paymentDay.value === "";
   commitDeclaredIncomeTotal();
+  updateNewPreapprovedAmount(Boolean(workflow.simulateVisible));
   calculationResultCard.hidden = !workflow.calculationResultVisible;
   if (workflow.calculationResultVisible) renderCalculationResult(false);
   toggleIncomePanel(Boolean(workflow.incomePanelOpen), false);
@@ -1399,10 +1451,14 @@ function applyReadOnlyWorkflowMode() {
     validateAddressButton, editHolderPersonal, cancelHolderPersonal, saveHolderPersonal,
     editHolderContact, cancelHolderContact, saveHolderContact, editSpousePersonal,
     cancelSpousePersonal, saveSpousePersonal, editSpouseContact, cancelSpouseContact,
-    saveSpouseContact, cancelSolicitationComment, saveSolicitationComment]
+    saveSpouseContact, editHolderAddress, cancelHolderAddress, saveHolderAddress,
+    editHolderEmployment, cancelHolderEmployment, saveHolderEmployment,
+    editVehicleData, cancelVehicleData, saveVehicleData,
+    cancelSolicitationComment, saveSolicitationComment]
     .forEach(setWorkflowControlDisabled);
   if (isEFE004DocumentaryPending()) {
     [vehicleColor, vehicleType, vehicleVin, vehicleEngineNumber].forEach((field) => { field.disabled = false; });
+    [editVehicleData, cancelVehicleData, saveVehicleData].forEach((button) => { button.disabled = false; });
     solicitationComment.disabled = false;
     cancelSolicitationComment.disabled = false;
     saveSolicitationComment.disabled = false;
@@ -1495,6 +1551,7 @@ function calculateFinancing() {
   const gpsAmount = 0;
   const financed = Math.max(0, (vehicleAmount - initialAmount + insuranceAmount + gpsAmount) * exchangeRateAmount);
   amountToFinance.value = `S/ ${financed.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  updateNewPreapprovedAmount(true);
   simulateButton.hidden = false;
   simulateButton.disabled = paymentDay.value === "";
   paymentDay.disabled = false;
@@ -1507,6 +1564,7 @@ function calculateFinancing() {
 
 function invalidateFinancingResults() {
   amountToFinance.value = "";
+  updateNewPreapprovedAmount(false);
   simulateButton.hidden = true;
   simulateButton.disabled = true;
   paymentDay.value = "";
@@ -1688,6 +1746,9 @@ function populateSolicitationScreen() {
   setContactEditing(false);
   setSpousePersonalEditing(false);
   setSpouseContactEditing(false);
+  setAddressEditing(false);
+  setEmploymentEditing(false);
+  setVehicleEditing(false);
   updateSolicitationAccordionStatuses();
   renderRequiredDocumentUploads();
   renderSolicitationComments();
@@ -1716,11 +1777,11 @@ const postApprovalDocumentNames = [
 ];
 
 const checklistTwoRequirements = [
-  { key: "fileContracts", name: "FILE DE CONTRATOS", required: true },
-  { key: "quotation", name: "COTIZACIÓN", required: true },
-  { key: "featuresLetter", name: "CARTA DE CARACTERÍSTICAS", required: true },
-  { key: "initialPaymentSupport", name: "SUSTENTO CUOTA INICIAL", required: true },
-  { key: "others", name: "OTROS", required: false },
+  { key: "fileContracts", name: "FILE DE CONTRATOS", required: true, maxFiles: 2 },
+  { key: "quotation", name: "COTIZACIÓN", required: true, maxFiles: 2 },
+  { key: "featuresLetter", name: "CARTA DE CARACTERÍSTICAS", required: true, maxFiles: 2 },
+  { key: "initialPaymentSupport", name: "SUSTENTO CUOTA INICIAL", required: true, maxFiles: 2 },
+  { key: "others", name: "OTROS", required: false, maxFiles: 5 },
 ];
 
 function renderPostApprovalDocuments() {
@@ -1772,7 +1833,7 @@ function renderChecklistTwo() {
     const help = document.createElement("p");
     help.textContent = requirement.required
       ? "Adjunta como mínimo 1 y como máximo 2 archivos PDF."
-      : "Puedes adjuntar hasta 2 archivos PDF de manera opcional.";
+      : `Puedes adjuntar hasta ${requirement.maxFiles} archivos PDF de manera opcional.`;
     const list = document.createElement("div");
     list.className = "uploaded-document-list checklist-two-files";
     files.forEach((fileName, index) => {
@@ -1791,7 +1852,7 @@ function renderChecklistTwo() {
     const content = document.createElement("div");
     content.className = "checklist-two-item-content";
     content.append(help, list);
-    if (!readOnly && files.length < 2) {
+    if (!readOnly && files.length < requirement.maxFiles) {
       const picker = document.createElement("label");
       picker.className = "document-file-picker checklist-two-picker";
       picker.textContent = "＋ Adjuntar documento";
@@ -2124,6 +2185,37 @@ function removeUploadedDocument(event) {
   renderRequiredDocumentUploads();
 }
 
+function solicitationFieldsComplete(fields) {
+  return fields.every((field) => field.value.trim() !== "" && field.checkValidity());
+}
+
+function validateSolicitationEditFields(fields) {
+  let firstInvalid = null;
+  fields.forEach((field) => {
+    const valid = field.value.trim() !== "" && field.checkValidity();
+    field.classList.toggle("has-error", !valid);
+    field.setAttribute("aria-invalid", String(!valid));
+    if (!valid && !firstInvalid) firstInvalid = field;
+  });
+  if (firstInvalid) firstInvalid.focus();
+  return !firstInvalid;
+}
+
+function updateSolicitationEditActions(fields, editing, editButton, cancelButton, saveButton, complete = solicitationFieldsComplete(fields)) {
+  const effectiveEditing = editing || !complete;
+  fields.forEach((field) => {
+    field.disabled = !effectiveEditing;
+    if (!effectiveEditing) {
+      field.classList.remove("has-error");
+      field.setAttribute("aria-invalid", "false");
+    }
+  });
+  editButton.hidden = effectiveEditing;
+  cancelButton.hidden = !effectiveEditing;
+  saveButton.hidden = !effectiveEditing;
+  return effectiveEditing;
+}
+
 function setPersonalEditing(editing, restore = false) {
   const fields = [holderBirthCountry, holderResidenceCountry, holderProfession, holderCivilStatus];
   if (editing) {
@@ -2131,11 +2223,11 @@ function setPersonalEditing(editing, restore = false) {
   } else if (restore && currentGeneratedRequest.personalEditBackup) {
     fields.forEach((field) => { field.value = currentGeneratedRequest.personalEditBackup[field.id]; });
   }
-  fields.forEach((field) => { field.disabled = !editing; });
-  editHolderPersonal.hidden = editing;
-  cancelHolderPersonal.hidden = !editing;
-  saveHolderPersonal.hidden = !editing;
-  if (!editing) currentGeneratedRequest.personalEditBackup = null;
+  const effectiveEditing = updateSolicitationEditActions(fields, editing, editHolderPersonal, cancelHolderPersonal, saveHolderPersonal);
+  if (effectiveEditing && !currentGeneratedRequest.personalEditBackup) {
+    currentGeneratedRequest.personalEditBackup = Object.fromEntries(fields.map((field) => [field.id, field.value]));
+  }
+  if (!effectiveEditing) currentGeneratedRequest.personalEditBackup = null;
 }
 
 function setContactEditing(editing, restore = false) {
@@ -2144,11 +2236,11 @@ function setContactEditing(editing, restore = false) {
   if (!editing && restore && currentGeneratedRequest.contactEditBackup) {
     editableFields.forEach((field) => { field.value = currentGeneratedRequest.contactEditBackup[field.id]; });
   }
-  editableFields.forEach((field) => { field.disabled = !editing; });
-  editHolderContact.hidden = editing;
-  cancelHolderContact.hidden = !editing;
-  saveHolderContact.hidden = !editing;
-  if (!editing) currentGeneratedRequest.contactEditBackup = null;
+  const effectiveEditing = updateSolicitationEditActions(editableFields, editing, editHolderContact, cancelHolderContact, saveHolderContact);
+  if (effectiveEditing && !currentGeneratedRequest.contactEditBackup) {
+    currentGeneratedRequest.contactEditBackup = Object.fromEntries(editableFields.map((field) => [field.id, field.value]));
+  }
+  if (!effectiveEditing) currentGeneratedRequest.contactEditBackup = null;
 }
 
 function setSpousePersonalEditing(editing, restore = false) {
@@ -2158,11 +2250,11 @@ function setSpousePersonalEditing(editing, restore = false) {
   } else if (restore && currentGeneratedRequest.spousePersonalEditBackup) {
     fields.forEach((field) => { field.value = currentGeneratedRequest.spousePersonalEditBackup[field.id]; });
   }
-  fields.forEach((field) => { field.disabled = !editing; });
-  editSpousePersonal.hidden = editing;
-  cancelSpousePersonal.hidden = !editing;
-  saveSpousePersonal.hidden = !editing;
-  if (!editing) currentGeneratedRequest.spousePersonalEditBackup = null;
+  const effectiveEditing = updateSolicitationEditActions(fields, editing, editSpousePersonal, cancelSpousePersonal, saveSpousePersonal);
+  if (effectiveEditing && !currentGeneratedRequest.spousePersonalEditBackup) {
+    currentGeneratedRequest.spousePersonalEditBackup = Object.fromEntries(fields.map((field) => [field.id, field.value]));
+  }
+  if (!effectiveEditing) currentGeneratedRequest.spousePersonalEditBackup = null;
 }
 
 function setSpouseContactEditing(editing, restore = false) {
@@ -2172,11 +2264,111 @@ function setSpouseContactEditing(editing, restore = false) {
   } else if (restore && currentGeneratedRequest.spouseContactEditBackup) {
     fields.forEach((field) => { field.value = currentGeneratedRequest.spouseContactEditBackup[field.id]; });
   }
-  fields.forEach((field) => { field.disabled = !editing; });
-  editSpouseContact.hidden = editing;
-  cancelSpouseContact.hidden = !editing;
-  saveSpouseContact.hidden = !editing;
-  if (!editing) currentGeneratedRequest.spouseContactEditBackup = null;
+  const effectiveEditing = updateSolicitationEditActions(fields, editing, editSpouseContact, cancelSpouseContact, saveSpouseContact);
+  if (effectiveEditing && !currentGeneratedRequest.spouseContactEditBackup) {
+    currentGeneratedRequest.spouseContactEditBackup = Object.fromEntries(fields.map((field) => [field.id, field.value]));
+  }
+  if (!effectiveEditing) currentGeneratedRequest.spouseContactEditBackup = null;
+}
+
+function getAddressEditFields() {
+  return [holderPropertyType, holderAddressYears, holderAddressMonths, holderDepartment,
+    holderProvince, holderDistrict, holderAddress, holderAddressReference];
+}
+
+function getEmploymentEditFields() {
+  return [employmentCategory, employerRuc, workplaceName, workplaceAddress, employmentActivity,
+    employmentPosition, employmentStartDate, employmentCurrency, monthlyNetIncome];
+}
+
+function employmentFieldsComplete() {
+  const requiredFields = [employmentCategory, workplaceName, workplaceAddress, employmentActivity,
+    employmentPosition, employmentStartDate, employmentCurrency, monthlyNetIncome];
+  return solicitationFieldsComplete(requiredFields)
+    && parseMoney(monthlyNetIncome.value) > 0
+    && (employerRuc.value === "" || employerRuc.checkValidity());
+}
+
+function validateEmploymentEditFields() {
+  const requiredFields = [employmentCategory, workplaceName, workplaceAddress, employmentActivity,
+    employmentPosition, employmentStartDate, employmentCurrency, monthlyNetIncome];
+  const requiredValid = validateSolicitationEditFields(requiredFields);
+  const monthlyValid = parseMoney(monthlyNetIncome.value) > 0;
+  monthlyNetIncome.classList.toggle("has-error", !monthlyValid);
+  monthlyNetIncome.setAttribute("aria-invalid", String(!monthlyValid));
+  const rucValid = employerRuc.value === "" || employerRuc.checkValidity();
+  employerRuc.classList.toggle("has-error", !rucValid);
+  employerRuc.setAttribute("aria-invalid", String(!rucValid));
+  if (requiredValid && !monthlyValid) monthlyNetIncome.focus();
+  else if (requiredValid && monthlyValid && !rucValid) employerRuc.focus();
+  return requiredValid && monthlyValid && rucValid;
+}
+
+function getVehicleEditFields() {
+  const fields = [vehicleSellerDocumentType, vehicleSellerDocument, vehicleSellerName,
+    solicitationVehicleBrand, solicitationVehicleModel, solicitationVehicleYear, vehicleOwnership];
+  if (vehicleOwnership.value === "Tercero") {
+    fields.push(vehicleThirdPartyNames, vehicleThirdPartyPaternalSurname, vehicleThirdPartyMaternalSurname);
+  }
+  if (isEFE004PostApprovalStage()) fields.push(vehicleColor, vehicleType, vehicleVin, vehicleEngineNumber);
+  return fields;
+}
+
+function setAddressEditing(editing, restore = false) {
+  const fields = getAddressEditFields();
+  const backupKey = "addressEditBackup";
+  if (editing) currentGeneratedRequest[backupKey] = {
+    ...Object.fromEntries(fields.map((field) => [field.id, field.value])),
+    __validated: Boolean(currentGeneratedRequest.addressValidated),
+  };
+  if (!editing && restore && currentGeneratedRequest[backupKey]) {
+    fields.forEach((field) => { field.value = currentGeneratedRequest[backupKey][field.id]; });
+    currentGeneratedRequest.addressValidated = Boolean(currentGeneratedRequest[backupKey].__validated);
+    addressValidationStatus.textContent = currentGeneratedRequest.addressValidated ? "Validada" : "Por confirmar";
+    addressValidationStatus.classList.toggle("validated", currentGeneratedRequest.addressValidated);
+  }
+  const effectiveEditing = updateSolicitationEditActions(fields, editing, editHolderAddress, cancelHolderAddress, saveHolderAddress);
+  if (effectiveEditing && !currentGeneratedRequest[backupKey]) {
+    currentGeneratedRequest[backupKey] = {
+      ...Object.fromEntries(fields.map((field) => [field.id, field.value])),
+      __validated: Boolean(currentGeneratedRequest.addressValidated),
+    };
+  }
+  if (!effectiveEditing) currentGeneratedRequest[backupKey] = null;
+  validateAddressButton.disabled = effectiveEditing || !solicitationFieldsComplete(fields);
+}
+
+function setEmploymentEditing(editing, restore = false) {
+  const fields = getEmploymentEditFields();
+  const backupKey = "employmentEditBackup";
+  if (editing) currentGeneratedRequest[backupKey] = Object.fromEntries(fields.map((field) => [field.id, field.value]));
+  if (!editing && restore && currentGeneratedRequest[backupKey]) {
+    fields.forEach((field) => { field.value = currentGeneratedRequest[backupKey][field.id]; });
+  }
+  const effectiveEditing = updateSolicitationEditActions(fields, editing, editHolderEmployment,
+    cancelHolderEmployment, saveHolderEmployment, employmentFieldsComplete());
+  if (effectiveEditing && !currentGeneratedRequest[backupKey]) {
+    currentGeneratedRequest[backupKey] = Object.fromEntries(fields.map((field) => [field.id, field.value]));
+  }
+  if (!effectiveEditing) currentGeneratedRequest[backupKey] = null;
+}
+
+function setVehicleEditing(editing, restore = false) {
+  const fields = getVehicleEditFields();
+  const backupKey = "vehicleEditBackup";
+  if (editing) currentGeneratedRequest[backupKey] = Object.fromEntries(fields.map((field) => [field.id, field.value]));
+  if (!editing && restore && currentGeneratedRequest[backupKey]) {
+    fields.forEach((field) => {
+      if (Object.hasOwn(currentGeneratedRequest[backupKey], field.id)) field.value = currentGeneratedRequest[backupKey][field.id];
+    });
+    syncThirdPartyOwnershipFields();
+  }
+  const effectiveEditing = updateSolicitationEditActions(fields, editing, editVehicleData,
+    cancelVehicleData, saveVehicleData);
+  if (effectiveEditing && !currentGeneratedRequest[backupKey]) {
+    currentGeneratedRequest[backupKey] = Object.fromEntries(fields.map((field) => [field.id, field.value]));
+  }
+  if (!effectiveEditing) currentGeneratedRequest[backupKey] = null;
 }
 
 function updateSolicitationAccordionStatuses() {
@@ -2210,7 +2402,7 @@ function updateSolicitationAccordionStatuses() {
   const addressFields = [holderPropertyType, holderAddressYears, holderAddressMonths, holderDepartment,
     holderProvince, holderDistrict, holderAddress, holderAddressReference];
   const addressComplete = addressFields.every((field) => field.value.trim() !== "" && field.checkValidity());
-  validateAddressButton.disabled = !addressComplete;
+  validateAddressButton.disabled = !addressComplete || !saveHolderAddress.hidden;
   holderAccordionStatus.textContent = complete ? "Completo" : "Sin completar";
   holderAccordionStatus.classList.toggle("complete", complete);
 
@@ -2362,7 +2554,6 @@ function validateCalculationRequirements(showErrors = false) {
       const profile = entry.querySelector('[data-field="profile"]');
       const situation = entry.querySelector('[data-field="situation"]');
       const startDate = entry.querySelector('[data-field="startDate"]');
-      const ruc = entry.querySelector('[data-field="ruc"]');
       const monthlyIncome = entry.querySelector('[data-field="monthlyIncome"]');
       const annualized = entry.querySelector('[data-field="annualized"]');
       validations.push(
@@ -2370,7 +2561,6 @@ function validateCalculationRequirements(showErrors = false) {
         [profile, profile.value !== ""],
         [situation, situation.value !== ""],
         [startDate, startDate.value !== ""],
-        [ruc, /^\d{11}$/.test(ruc.value)],
         [monthlyIncome, parseMoney(monthlyIncome.value) > 0],
         [annualized, annualized.value !== ""],
       );
@@ -2418,18 +2608,25 @@ function syncEmploymentPositionLabel() {
 }
 
 function syncVehicleOwnershipOptions(selectedValue = vehicleOwnership.value) {
-  const isMarried = currentGeneratedRequest?.person?.civilStatus === "CASADO" || currentGeneratedRequest?.hasSpouse;
-  const spouseOption = Array.from(vehicleOwnership.options).find((option) => option.value === "Conyugue");
-  if (isMarried && !spouseOption) {
+  const hasSpouse = Boolean(currentGeneratedRequest?.hasSpouse);
+  const jointOwnershipValue = "Titular + Conyugue";
+  let spouseOption = Array.from(vehicleOwnership.options)
+    .find((option) => option.value === jointOwnershipValue || option.value === "Conyugue");
+  if (hasSpouse && !spouseOption) {
     const option = document.createElement("option");
-    option.value = "Conyugue";
-    option.textContent = "Conyugue";
+    option.value = jointOwnershipValue;
+    option.textContent = jointOwnershipValue;
     const thirdPartyOption = Array.from(vehicleOwnership.options).find((item) => item.value === "Tercero");
     vehicleOwnership.insertBefore(option, thirdPartyOption || null);
-  } else if (!isMarried && spouseOption) {
+    spouseOption = option;
+  } else if (hasSpouse && spouseOption) {
+    spouseOption.value = jointOwnershipValue;
+    spouseOption.textContent = jointOwnershipValue;
+  } else if (!hasSpouse && spouseOption) {
     spouseOption.remove();
   }
-  vehicleOwnership.value = selectedValue === "Conyugue" && !isMarried ? "" : selectedValue;
+  const normalizedValue = selectedValue === "Conyugue" ? jointOwnershipValue : selectedValue;
+  vehicleOwnership.value = normalizedValue === jointOwnershipValue && !hasSpouse ? "" : normalizedValue;
 }
 
 function syncThirdPartyOwnershipFields() {
@@ -2628,6 +2825,7 @@ function confirmSimulation() {
     } else {
       resetManualPersonForm();
       manualPersonForm.hidden = false;
+      setManualPersonEditing(true);
       setSpouseRequirement(true);
       simulationMessage.textContent =
         "No se encontraron datos. Completa el formulario de la persona.";
@@ -2637,8 +2835,8 @@ function confirmSimulation() {
     }
   }
 
-  if (!manualPersonForm.hidden && !validateManualPersonForm()) {
-    simulationMessage.textContent = "Completa los datos requeridos de la persona.";
+  if (!manualPersonForm.hidden && !manualPersonSaved) {
+    simulationMessage.textContent = "Guarda los datos de la persona antes de continuar.";
     simulationMessage.classList.add("is-error");
     return;
   }
@@ -2861,6 +3059,13 @@ vehiclePrice.addEventListener("keydown", (event) => {
   formatVehiclePrice();
 });
 confirmSimulationButton.addEventListener("click", confirmSimulation);
+saveManualPerson.addEventListener("click", saveManualPersonData);
+editManualPerson.addEventListener("click", () => {
+  setManualPersonEditing(true);
+  simulationMessage.textContent = "Edita los datos y pulsa Guardar para continuar.";
+  simulationMessage.classList.remove("is-error");
+  clientNames.focus();
+});
 simulationForm.addEventListener("keydown", (event) => {
   if (event.key === "Enter") event.preventDefault();
 });
@@ -2953,6 +3158,8 @@ cancelHolderPersonal.addEventListener("click", () => {
   updateSolicitationAccordionStatuses();
 });
 saveHolderPersonal.addEventListener("click", () => {
+  const fields = [holderBirthCountry, holderResidenceCountry, holderProfession, holderCivilStatus];
+  if (!validateSolicitationEditFields(fields)) return;
   currentGeneratedRequest.person.civilStatus = holderCivilStatus.value;
   syncVehicleOwnershipOptions(vehicleOwnership.value);
   syncThirdPartyOwnershipFields();
@@ -2966,10 +3173,7 @@ cancelHolderContact.addEventListener("click", () => {
   updateSolicitationAccordionStatuses();
 });
 saveHolderContact.addEventListener("click", () => {
-  if (!holderPhone.checkValidity() || !holderEmail.checkValidity()) {
-    (!holderPhone.checkValidity() ? holderPhone : holderEmail).reportValidity();
-    return;
-  }
+  if (!validateSolicitationEditFields([holderPhone, holderEmail])) return;
   setContactEditing(false);
   currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
   updateSolicitationAccordionStatuses();
@@ -2981,6 +3185,8 @@ cancelSpousePersonal.addEventListener("click", () => {
   updateSolicitationAccordionStatuses();
 });
 saveSpousePersonal.addEventListener("click", () => {
+  const fields = [spouseBirthCountry, spouseResidenceCountry, spouseProfession, spouseCivilStatus];
+  if (!validateSolicitationEditFields(fields)) return;
   currentGeneratedRequest.spousePerson.civilStatus = spouseCivilStatus.value;
   setSpousePersonalEditing(false);
   currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
@@ -2992,15 +3198,48 @@ cancelSpouseContact.addEventListener("click", () => {
   updateSolicitationAccordionStatuses();
 });
 saveSpouseContact.addEventListener("click", () => {
-  if (!spousePhone.checkValidity() || !spouseEmail.checkValidity()) {
-    (!spousePhone.checkValidity() ? spousePhone : spouseEmail).reportValidity();
-    return;
-  }
+  if (!validateSolicitationEditFields([spousePhone, spouseEmail])) return;
   setSpouseContactEditing(false);
   currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
   updateSolicitationAccordionStatuses();
 });
 spousePhone.addEventListener("input", formatPhoneInput);
+editHolderAddress.addEventListener("click", () => setAddressEditing(true));
+cancelHolderAddress.addEventListener("click", () => {
+  setAddressEditing(false, true);
+  updateSolicitationAccordionStatuses();
+});
+saveHolderAddress.addEventListener("click", () => {
+  const fields = getAddressEditFields();
+  if (!validateSolicitationEditFields(fields)) return;
+  setAddressEditing(false);
+  currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
+  updateSolicitationAccordionStatuses();
+});
+editHolderEmployment.addEventListener("click", () => setEmploymentEditing(true));
+cancelHolderEmployment.addEventListener("click", () => {
+  setEmploymentEditing(false, true);
+  syncEmploymentPositionLabel();
+  updateSolicitationAccordionStatuses();
+});
+saveHolderEmployment.addEventListener("click", () => {
+  if (!validateEmploymentEditFields()) return;
+  setEmploymentEditing(false);
+  currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
+  updateSolicitationAccordionStatuses();
+});
+editVehicleData.addEventListener("click", () => setVehicleEditing(true));
+cancelVehicleData.addEventListener("click", () => {
+  setVehicleEditing(false, true);
+  updateSolicitationAccordionStatuses();
+});
+saveVehicleData.addEventListener("click", () => {
+  const fields = getVehicleEditFields();
+  if (!validateSolicitationEditFields(fields)) return;
+  setVehicleEditing(false);
+  currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
+  updateSolicitationAccordionStatuses();
+});
 employmentCategory.addEventListener("change", syncEmploymentPositionLabel);
 vehicleOwnership.addEventListener("change", () => {
   syncThirdPartyOwnershipFields();
@@ -3062,6 +3301,8 @@ checklistTwoItems.addEventListener("change", (event) => {
   const input = event.target.closest("[data-checklist-input-key]");
   if (!input) return;
   const key = input.dataset.checklistInputKey;
+  const requirement = checklistTwoRequirements.find((item) => item.key === key);
+  const maxFiles = requirement?.maxFiles || 2;
   currentGeneratedRequest.checklistTwoFiles ||= {};
   const existing = currentGeneratedRequest.checklistTwoFiles[key] || [];
   const selected = Array.from(input.files);
@@ -3071,8 +3312,8 @@ checklistTwoItems.addEventListener("change", (event) => {
     input.value = "";
     return;
   }
-  if (existing.length + selected.length > 2) {
-    checklistTwoError.textContent = "Cada ítem permite como máximo 2 archivos PDF.";
+  if (existing.length + selected.length > maxFiles) {
+    checklistTwoError.textContent = `El ítem ${requirement?.name || "seleccionado"} permite como máximo ${maxFiles} archivos PDF.`;
     input.value = "";
     return;
   }

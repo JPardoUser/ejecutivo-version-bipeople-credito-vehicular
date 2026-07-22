@@ -230,8 +230,14 @@
 
           <section id="manualPersonForm" class="manual-person-form" aria-labelledby="manual-person-title" hidden>
             <div class="manual-person-heading">
-              <h3 id="manual-person-title">Datos de la persona</h3>
-              <p>No se encontraron datos para el documento ingresado. Completa la información.</p>
+              <div>
+                <h3 id="manual-person-title">Datos de la persona</h3>
+                <p>No se encontraron datos para el documento ingresado. Completa la información.</p>
+              </div>
+              <div class="manual-person-actions">
+                <button id="saveManualPerson" class="confirm-button" type="button">Guardar</button>
+                <button id="editManualPerson" type="button" hidden>✎&nbsp; Editar</button>
+              </div>
             </div>
 
             <div class="manual-person-grid">
@@ -621,7 +627,7 @@
                   <div><dt>Fecha de nacimiento</dt><dd id="holderBirthDate">—</dd></div>
                   <div><dt>País de nacimiento</dt><dd><select id="holderBirthCountry" disabled><option value="" selected>Seleccionar</option><option>Perú</option><option>Argentina</option><option>Bolivia</option><option>Chile</option><option>Colombia</option><option>Ecuador</option><option>Venezuela</option><option>Otro</option></select></dd></div>
                   <div><dt>País de residencia</dt><dd><select id="holderResidenceCountry" disabled><option value="" selected>Seleccionar</option><option>Perú</option><option>Argentina</option><option>Bolivia</option><option>Chile</option><option>Colombia</option><option>Ecuador</option><option>Venezuela</option><option>Otro</option></select></dd></div>
-                  <div><dt>Profesión</dt><dd><select id="holderProfession" disabled><option value="" selected>Seleccionar</option><option>Administrador</option><option>Abogado</option><option>Contador</option><option>Economista</option><option>Ingeniero</option><option>Médico</option><option>Docente</option><option>Técnico</option><option>Comerciante</option><option>Otra</option></select></dd></div>
+                  <div><dt>Profesión</dt><dd><select id="holderProfession" disabled><option value="" selected>Seleccionar</option><option>EMPLEADO</option><option>OBRERO</option><option>AMA DE CASA</option><option>EMPLEADA DE HOGAR</option><option>ABOGADO</option><option>ADMINISTRADOS/ECONOMISTA</option><option>ARQUITECTO</option><option>CONTADOR O AUDITOR</option><option>ENFERMERO(A)</option><option>INGENIERO</option><option>MEDICO</option><option>MILITAR/POLICIA</option><option>PROFESOR</option><option>COMERCIANTE MAYORISTA</option><option>PERIODISTA</option><option>PERSONAL DE FUERZAS ARMADAS</option><option>PSICOLOGO</option><option>ESTUDIANTE</option><option>JUBILADO</option></select></dd></div>
                   <div><dt>Estado civil</dt><dd><select id="holderCivilStatus" disabled><option value="SOLTERO">Soltero</option><option value="CASADO">Casado</option><option value="DIVORCIADO">Divorciado</option><option value="VIUDO">Viudo</option></select></dd></div>
                 </dl>
               </section>
@@ -633,7 +639,7 @@
                 </dl>
               </section>
               <section class="holder-information-card address-card">
-                <header><h3><span aria-hidden="true">⌂</span> Dirección domiciliaria <mark id="addressValidationStatus">Por confirmar</mark></h3><button id="validateAddressButton" type="button" disabled>Validar</button></header>
+                <header><h3><span aria-hidden="true">⌂</span> Dirección domiciliaria <mark id="addressValidationStatus">Por confirmar</mark></h3><div class="section-header-actions"><div class="holder-edit-actions"><button id="editHolderAddress" type="button">✎&nbsp; Editar</button><button id="cancelHolderAddress" type="button" hidden>Cancelar</button><button id="saveHolderAddress" type="button" hidden>Guardar</button></div><button id="validateAddressButton" type="button" disabled>Validar</button></div></header>
                 <dl class="holder-data-grid">
                   <div><dt>Tipo de propiedad</dt><dd><select id="holderPropertyType"><option value="" selected>Seleccionar</option><option>Propia</option><option>Alquilada</option><option>Familiar</option></select></dd></div>
                   <div><dt>Antigüedad domiciliaria</dt><dd class="address-age"><input id="holderAddressYears" type="number" min="0" placeholder="Años"><input id="holderAddressMonths" type="number" min="0" max="11" placeholder="Meses"></dd></div>
@@ -645,7 +651,7 @@
                 </dl>
               </section>
               <section class="holder-information-card employment-card">
-                <header><h3><span aria-hidden="true">▦</span> Datos laborales</h3></header>
+                <header><h3><span aria-hidden="true">▦</span> Datos laborales</h3><div class="holder-edit-actions"><button id="editHolderEmployment" type="button">✎&nbsp; Editar</button><button id="cancelHolderEmployment" type="button" hidden>Cancelar</button><button id="saveHolderEmployment" type="button" hidden>Guardar</button></div></header>
                 <dl class="holder-data-grid employment-data-grid">
                   <div><dt>Categoría laboral</dt><dd><select id="employmentCategory"><option value="" selected>Seleccionar</option><option>Dependiente</option><option>Independiente</option><option>Jubilado</option></select></dd></div>
                   <div><dt>RUC de empleador (no obligatorio)</dt><dd><input id="employerRuc" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" placeholder="Ingrese RUC"></dd></div>
@@ -680,7 +686,7 @@
                   <div><dt>Fecha de nacimiento</dt><dd id="spouseBirthDate">—</dd></div>
                   <div><dt>País de nacimiento</dt><dd><select id="spouseBirthCountry" disabled><option value="" selected>Seleccionar</option><option>Perú</option><option>Argentina</option><option>Bolivia</option><option>Chile</option><option>Colombia</option><option>Ecuador</option><option>Venezuela</option><option>Otro</option></select></dd></div>
                   <div><dt>País de residencia</dt><dd><select id="spouseResidenceCountry" disabled><option value="" selected>Seleccionar</option><option>Perú</option><option>Argentina</option><option>Bolivia</option><option>Chile</option><option>Colombia</option><option>Ecuador</option><option>Venezuela</option><option>Otro</option></select></dd></div>
-                  <div><dt>Profesión</dt><dd><select id="spouseProfession" disabled><option value="" selected>Seleccionar</option><option>Administrador</option><option>Abogado</option><option>Contador</option><option>Economista</option><option>Ingeniero</option><option>Médico</option><option>Docente</option><option>Técnico</option><option>Comerciante</option><option>Otra</option></select></dd></div>
+                  <div><dt>Profesión</dt><dd><select id="spouseProfession" disabled><option value="" selected>Seleccionar</option><option>EMPLEADO</option><option>OBRERO</option><option>AMA DE CASA</option><option>EMPLEADA DE HOGAR</option><option>ABOGADO</option><option>ADMINISTRADOS/ECONOMISTA</option><option>ARQUITECTO</option><option>CONTADOR O AUDITOR</option><option>ENFERMERO(A)</option><option>INGENIERO</option><option>MEDICO</option><option>MILITAR/POLICIA</option><option>PROFESOR</option><option>COMERCIANTE MAYORISTA</option><option>PERIODISTA</option><option>PERSONAL DE FUERZAS ARMADAS</option><option>PSICOLOGO</option><option>ESTUDIANTE</option><option>JUBILADO</option></select></dd></div>
                   <div><dt>Estado civil</dt><dd><select id="spouseCivilStatus" disabled><option value="SOLTERO">Soltero</option><option value="CASADO" selected>Casado</option><option value="DIVORCIADO">Divorciado</option><option value="VIUDO">Viudo</option></select></dd></div>
                 </dl>
               </section>
@@ -702,7 +708,7 @@
             </button>
             <div class="solicitation-accordion-content vehicle-detail" hidden>
               <section class="holder-information-card">
-                <header><h3><span aria-hidden="true">▣</span> Datos del vehículo</h3></header>
+                <header class="vehicle-edit-header"><div class="holder-edit-actions"><button id="editVehicleData" type="button">✎&nbsp; Editar</button><button id="cancelVehicleData" type="button" hidden>Cancelar</button><button id="saveVehicleData" type="button" hidden>Guardar</button></div></header>
                 <dl class="holder-data-grid vehicle-data-grid">
                   <div><dt>Estado vehículo</dt><dd><input id="solicitationVehicleCondition" value="Nuevo" disabled></dd></div>
                   <div><dt>Concesionario</dt><dd><input id="solicitationVehicleDealer" disabled></dd></div>
