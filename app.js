@@ -644,10 +644,16 @@ function resetSpouseContent() {
   spouseDocument.value = "";
   spouseContent.replaceChildren();
   spouseCard.classList.remove("has-error");
+  updateSimulationConfirmAvailability();
 }
 
 function updateSimulationConfirmAvailability() {
-  confirmSimulationButton.disabled = !manualPersonForm.hidden && !manualPersonSaved;
+  const manualPersonPending = !manualPersonForm.hidden && !manualPersonSaved;
+  const spouseRequired = !manualPersonForm.hidden
+    && manualPersonSaved
+    && civilStatus.value === "CASADO"
+    && !spouseLoaded;
+  confirmSimulationButton.disabled = manualPersonPending || spouseRequired;
 }
 
 function setManualPersonEditing(editing) {
@@ -668,7 +674,9 @@ function saveManualPersonData() {
   manualPersonFields.forEach((field) => { field.disabled = true; });
   saveManualPerson.hidden = true;
   editManualPerson.hidden = false;
-  simulationMessage.textContent = "Datos de la persona guardados.";
+  simulationMessage.textContent = civilStatus.value === "CASADO" && !spouseLoaded
+    ? "Datos de la persona guardados. Agrega al conyugue para continuar."
+    : "Datos de la persona guardados.";
   simulationMessage.classList.remove("is-error");
   updateSimulationConfirmAvailability();
 }
@@ -2841,6 +2849,13 @@ function confirmSimulation() {
     return;
   }
 
+  if (!manualPersonForm.hidden && civilStatus.value === "CASADO" && !spouseLoaded) {
+    spouseCard.classList.add("has-error");
+    simulationMessage.textContent = "Agrega los datos del conyugue para continuar.";
+    simulationMessage.classList.add("is-error");
+    return;
+  }
+
   const person = mockPerson || getManualPersonData();
   setSpouseRequirement(true);
 
@@ -2912,6 +2927,7 @@ function renderSpouse(documentNumber) {
 
   record.append(recordCopy, removeButton);
   spouseContent.append(record);
+  updateSimulationConfirmAvailability();
 }
 
 function filterSpouse() {
