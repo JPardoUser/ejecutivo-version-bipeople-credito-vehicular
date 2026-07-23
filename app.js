@@ -143,6 +143,7 @@ const resultDocuments = document.querySelector("#resultDocuments");
 const resultVerification = document.querySelector("#resultVerification");
 const paymentDay = document.querySelector("#paymentDay");
 const continueRequestButton = document.querySelector("#continueRequestButton");
+const downloadPreliminaryScheduleButton = document.querySelector("#downloadPreliminaryScheduleButton");
 const calculationSolicitationStageButton = document.querySelector("#calculationSolicitationStageButton");
 const solicitationView = document.querySelector("#solicitationView");
 const solicitationSimulationStageButton = document.querySelector("#solicitationSimulationStageButton");
@@ -291,6 +292,8 @@ const creditLifeInsuranceType = document.querySelector("#creditLifeInsuranceType
 const gpsOption = document.querySelector("#gpsOption");
 const gpsTypeField = document.querySelector("#gpsTypeField");
 const gpsType = document.querySelector("#gpsType");
+const gpsFinancedField = document.querySelector("#gpsFinancedField");
+const gpsFinanced = document.querySelector("#gpsFinanced");
 const doubleInstallments = document.querySelector("#doubleInstallments");
 const doubleInstallmentMonths = document.querySelector("#doubleInstallmentMonths");
 const doubleInstallmentMonthsField = document.querySelector("#doubleInstallmentMonthsField");
@@ -344,6 +347,9 @@ const incompleteSolicitationModal = document.querySelector("#incompleteSolicitat
 const incompleteSolicitationMessage = document.querySelector("#incompleteSolicitationMessage");
 const closeIncompleteSolicitationModal = document.querySelector("#closeIncompleteSolicitationModal");
 const acceptIncompleteSolicitation = document.querySelector("#acceptIncompleteSolicitation");
+const riskPrivacyModal = document.querySelector("#riskPrivacyModal");
+const riskPrivacyPhone = document.querySelector("#riskPrivacyPhone");
+const acceptRiskPrivacy = document.querySelector("#acceptRiskPrivacy");
 const phoneOtpModal = document.querySelector("#phoneOtpModal");
 const phoneOtpDestination = document.querySelector("#phoneOtpDestination");
 const phoneOtpInputs = document.querySelector("#phoneOtpInputs");
@@ -2038,6 +2044,18 @@ function openPhoneOtp() {
   resetOtpGroup(phoneOtpInputs, phoneOtpError);
 }
 
+function openRiskPrivacyNotice() {
+  riskPrivacyPhone.textContent = holderPhone.value;
+  riskPrivacyModal.hidden = false;
+  document.body.classList.add("modal-open");
+  acceptRiskPrivacy.focus();
+}
+
+function acceptRiskPrivacyNotice() {
+  riskPrivacyModal.hidden = true;
+  openPhoneOtp();
+}
+
 function closePhoneOtp() {
   phoneOtpModal.hidden = true;
   document.body.classList.remove("modal-open");
@@ -2090,7 +2108,7 @@ function startRiskSubmission() {
     document.body.classList.add("modal-open");
     return;
   }
-  openPhoneOtp();
+  openRiskPrivacyNotice();
 }
 
 function renderRequiredDocumentUploads() {
@@ -2602,6 +2620,7 @@ function syncCreditLifeInsuranceFields() {
 function syncGpsFields() {
   const withoutGps = gpsOption.value === "sin_gps";
   gpsTypeField.hidden = withoutGps;
+  gpsFinancedField.hidden = withoutGps;
   updateCalculateAvailability();
 }
 
@@ -3125,6 +3144,23 @@ exchangeRate.addEventListener("input", updateCalculateAvailability);
 selectedTerm.addEventListener("change", updateCalculateAvailability);
 calculateButton.addEventListener("click", calculateFinancing);
 simulateButton.addEventListener("click", () => renderCalculationResult());
+function syncPreliminaryScheduleButton() {
+  downloadPreliminaryScheduleButton.hidden = continueRequestButton.disabled;
+}
+new MutationObserver(syncPreliminaryScheduleButton).observe(continueRequestButton, {
+  attributes: true,
+  attributeFilter: ["disabled"],
+});
+syncPreliminaryScheduleButton();
+downloadPreliminaryScheduleButton.addEventListener("click", () => {
+  const downloadLink = document.createElement("a");
+  downloadLink.href = "cronograma_preliminar.pdf";
+  downloadLink.target = "_blank";
+  downloadLink.rel = "noopener noreferrer";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+});
 continueRequestButton.addEventListener("click", () => {
   if (continueRequestButton.disabled) return;
   creditPrivacyModal.hidden = false;
@@ -3161,6 +3197,7 @@ closePlaftDeniedModal.addEventListener("click", closePlaftModal);
 acceptPlaftDenied.addEventListener("click", closePlaftModal);
 closeIncompleteSolicitationModal.addEventListener("click", closeIncompleteSolicitationPopup);
 acceptIncompleteSolicitation.addEventListener("click", closeIncompleteSolicitationPopup);
+acceptRiskPrivacy.addEventListener("click", acceptRiskPrivacyNotice);
 closePhoneOtpModal.addEventListener("click", closePhoneOtp);
 acceptRiskSubmission.addEventListener("click", () => {
   riskSubmissionSuccessModal.hidden = true;
@@ -3486,6 +3523,7 @@ function initializeEFE004Workflow() {
     ["creditLifeInsuranceType", "Individual"],
     ["gpsOption", "con_gps"],
     ["gpsType", "Premium"],
+    ["gpsFinanced", "Si"],
     ["registrationExpenses", "Si"],
     ["notarialExpenses", "Si"],
     ["signatureExpenses", "Si"],

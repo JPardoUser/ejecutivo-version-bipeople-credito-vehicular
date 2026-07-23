@@ -3019,6 +3019,12 @@ td {
   font-size: 17px;
 }
 
+.risk-privacy-modal .modal-primary-button {
+  display: block;
+  min-width: 150px;
+  margin: 24px 0 0 auto;
+}
+
 .otp-modify-link {
   padding: 3px 0;
   border: 0;
@@ -3379,10 +3385,26 @@ td {
 
 .result-actions {
   display: grid;
-  grid-template-columns: 160px 200px;
+  grid-template-columns: 160px 250px 200px;
   justify-content: center;
   margin-top: 8px;
   gap: 16px;
+}
+
+.preliminary-schedule-button {
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid #c91f2b;
+  border-radius: 8px;
+  background: #c91f2b;
+  color: #fff;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.preliminary-schedule-button:hover {
+  border-color: #a91620;
+  background: #a91620;
 }
 
 .success-modal {
@@ -3752,7 +3774,7 @@ td {
   }
 
   .result-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .income-person-card {
