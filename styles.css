@@ -1348,6 +1348,17 @@ td {
   font-size: 14px;
 }
 
+.annualized-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.annualized-heading .holder-edit-actions {
+  margin-left: auto;
+}
+
 .annualized-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1847,6 +1858,10 @@ td {
   margin-top: 22px;
   padding-top: 20px;
   border-top: 1px solid #e5e9f0;
+}
+
+.calculation-footer-grid.has-double-installments {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .calculation-footer-grid .confirm-button {

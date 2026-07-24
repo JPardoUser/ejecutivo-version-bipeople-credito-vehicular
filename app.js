@@ -187,6 +187,7 @@ const employerRuc = document.querySelector("#employerRuc");
 const workplaceName = document.querySelector("#workplaceName");
 const workplaceAddress = document.querySelector("#workplaceAddress");
 const employmentActivity = document.querySelector("#employmentActivity");
+const employmentPositionLabel = document.querySelector("#employmentPositionLabel");
 const employmentPosition = document.querySelector("#employmentPosition");
 const employmentStartDate = document.querySelector("#employmentStartDate");
 const employmentCurrency = document.querySelector("#employmentCurrency");
@@ -196,6 +197,9 @@ const annualizedSalesYear = document.querySelector("#annualizedSalesYear");
 const annualizedCurrency = document.querySelector("#annualizedCurrency");
 const annualizedAmount = document.querySelector("#annualizedAmount");
 const annualizedIncomeType = document.querySelector("#annualizedIncomeType");
+const editAnnualizedData = document.querySelector("#editAnnualizedData");
+const cancelAnnualizedData = document.querySelector("#cancelAnnualizedData");
+const saveAnnualizedData = document.querySelector("#saveAnnualizedData");
 const editHolderEmployment = document.querySelector("#editHolderEmployment");
 const cancelHolderEmployment = document.querySelector("#cancelHolderEmployment");
 const saveHolderEmployment = document.querySelector("#saveHolderEmployment");
@@ -370,6 +374,9 @@ let spouseIncomes = [];
 let savedHolderIncomes = [];
 let savedSpouseIncomes = [];
 let incomeChangesPending = false;
+let annualizedDataSaved = false;
+let annualizedDataEditing = false;
+let annualizedDataBackup = null;
 let holderPrimaryIncomeLoaded = false;
 let spousePrimaryIncomeLoaded = false;
 let holderPrimaryEditing = false;
@@ -1342,6 +1349,22 @@ function captureSolicitationDetails() {
   };
 }
 
+function syncEmploymentPositionOptions(preferredValue = employmentPosition.value) {
+  const independent = employmentCategory.value === "Independiente";
+  const options = independent
+    ? ["", "Formal", "Informal"]
+    : ["", "Empleado", "Gerente", "Subgerente", "Operario"];
+
+  employmentPositionLabel.textContent = independent ? "Situación laboral" : "Cargo";
+  employmentPosition.replaceChildren(...options.map((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value || "Seleccionar";
+    return option;
+  }));
+  employmentPosition.value = options.includes(preferredValue) ? preferredValue : "";
+}
+
 function restoreWorkflow(workflow) {
   currentGeneratedRequest = workflow;
   pendingSimulationObservations = workflow.observations || getWorkflowObservations(workflow.document);
@@ -1484,6 +1507,7 @@ function applyReadOnlyWorkflowMode() {
     cancelSpousePersonal, saveSpousePersonal, editSpouseContact, cancelSpouseContact,
     saveSpouseContact, editHolderAddress,
     editHolderEmployment, cancelHolderEmployment, saveHolderEmployment,
+    editAnnualizedData, cancelAnnualizedData, saveAnnualizedData,
     editVehicleData, cancelVehicleData, saveVehicleData,
     cancelSolicitationComment, saveSolicitationComment]
     .forEach(setWorkflowControlDisabled);
@@ -1701,11 +1725,11 @@ function populateSolicitationScreen() {
   addressValidationStatus.textContent = currentGeneratedRequest.addressValidated ? "Validada" : "Por confirmar";
   addressValidationStatus.classList.toggle("validated", currentGeneratedRequest.addressValidated);
   employmentCategory.value = details.employmentCategory || "";
+  syncEmploymentPositionOptions(details.employmentPosition || "");
   employerRuc.value = details.employerRuc || "";
   workplaceName.value = details.workplaceName || "";
   workplaceAddress.value = details.workplaceAddress || "";
   employmentActivity.value = details.employmentActivity || "";
-  employmentPosition.value = details.employmentPosition || "";
   employmentStartDate.value = details.employmentStartDate || "";
   employmentCurrency.value = details.employmentCurrency || "Soles (S/)";
   monthlyNetIncome.value = details.monthlyNetIncome || "";
@@ -1713,6 +1737,9 @@ function populateSolicitationScreen() {
   annualizedCurrency.value = details.annualizedCurrency || "Soles";
   annualizedAmount.value = details.annualizedAmount || "";
   annualizedIncomeType.value = details.annualizedIncomeType || "";
+  annualizedDataSaved = Boolean(details.annualizedAmount && details.annualizedIncomeType);
+  annualizedDataEditing = false;
+  annualizedDataBackup = null;
   syncAnnualizedSection();
   editHolderContact.disabled = false;
   solicitationSpouseAccordion.hidden = !currentGeneratedRequest.hasSpouse;
@@ -2346,12 +2373,8 @@ function getAddressEditFields() {
 }
 
 function getEmploymentEditFields() {
-  const fields = [employmentCategory, employerRuc, workplaceName, workplaceAddress, employmentActivity,
+  return [employmentCategory, employerRuc, workplaceName, workplaceAddress, employmentActivity,
     employmentPosition, employmentStartDate, employmentCurrency, monthlyNetIncome];
-  if (!annualizedSection.hidden) {
-    fields.push(annualizedSalesYear, annualizedCurrency, annualizedAmount, annualizedIncomeType);
-  }
-  return fields;
 }
 
 function employmentFieldsComplete() {
@@ -2400,6 +2423,46 @@ function holderRequiresAnnualizedData() {
 
 function syncAnnualizedSection() {
   annualizedSection.hidden = !holderRequiresAnnualizedData();
+  if (!annualizedSection.hidden) setAnnualizedDataMode(annualizedDataSaved, false);
+}
+
+function getAnnualizedFields() {
+  return [annualizedSalesYear, annualizedCurrency, annualizedAmount, annualizedIncomeType];
+}
+
+function setAnnualizedDataMode(saved, editing = false) {
+  annualizedDataSaved = saved;
+  annualizedDataEditing = editing;
+  getAnnualizedFields().forEach((field) => {
+    field.disabled = saved && !editing;
+    if (!editing) {
+      field.classList.remove("has-error");
+      field.setAttribute("aria-invalid", "false");
+    }
+  });
+  editAnnualizedData.hidden = !saved || editing;
+  cancelAnnualizedData.hidden = !editing;
+  saveAnnualizedData.hidden = !editing;
+}
+
+function beginAnnualizedDataChanges() {
+  if (annualizedDataSaved && !annualizedDataEditing) return;
+  if (!annualizedDataBackup) {
+    annualizedDataBackup = Object.fromEntries(getAnnualizedFields().map((field) => [field.id, field.value]));
+  }
+  annualizedDataEditing = true;
+  editAnnualizedData.hidden = true;
+  cancelAnnualizedData.hidden = false;
+  saveAnnualizedData.hidden = false;
+}
+
+function validateAnnualizedData() {
+  const fieldsValid = validateSolicitationEditFields(getAnnualizedFields());
+  const amountValid = parseMoney(annualizedAmount.value) > 0;
+  annualizedAmount.classList.toggle("has-error", !amountValid);
+  annualizedAmount.setAttribute("aria-invalid", String(!amountValid));
+  if (fieldsValid && !amountValid) annualizedAmount.focus();
+  return fieldsValid && amountValid;
 }
 
 function getVehicleEditFields() {
@@ -2450,6 +2513,7 @@ function setEmploymentEditing(editing, restore = false) {
   if (editing) currentGeneratedRequest[backupKey] = Object.fromEntries(fields.map((field) => [field.id, field.value]));
   if (!editing && restore && currentGeneratedRequest[backupKey]) {
     fields.forEach((field) => { field.value = currentGeneratedRequest[backupKey][field.id]; });
+    syncEmploymentPositionOptions(currentGeneratedRequest[backupKey].employmentPosition || "");
   }
   const effectiveEditing = updateSolicitationEditActions(fields, editing, editHolderEmployment,
     cancelHolderEmployment, saveHolderEmployment, employmentFieldsComplete());
@@ -2709,7 +2773,9 @@ function syncGpsFields() {
 }
 
 function syncDoubleInstallmentFields() {
-  doubleInstallmentMonthsField.hidden = doubleInstallments.value !== "Si";
+  const enabled = doubleInstallments.value === "Si";
+  doubleInstallmentMonthsField.hidden = !enabled;
+  doubleInstallments.closest(".calculation-footer-grid")?.classList.toggle("has-double-installments", enabled);
 }
 
 function syncVehicleOwnershipOptions(selectedValue = vehicleOwnership.value) {
@@ -3337,6 +3403,10 @@ saveSpouseContact.addEventListener("click", () => {
 });
 spousePhone.addEventListener("input", formatPhoneInput);
 editHolderAddress.addEventListener("click", () => setAddressEditing(true));
+employmentCategory.addEventListener("change", () => {
+  syncEmploymentPositionOptions();
+  updateSolicitationAccordionStatuses();
+});
 editHolderEmployment.addEventListener("click", () => setEmploymentEditing(true));
 cancelHolderEmployment.addEventListener("click", () => {
   setEmploymentEditing(false, true);
@@ -3345,6 +3415,36 @@ cancelHolderEmployment.addEventListener("click", () => {
 saveHolderEmployment.addEventListener("click", () => {
   if (!validateEmploymentEditFields()) return;
   setEmploymentEditing(false);
+  currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
+  updateSolicitationAccordionStatuses();
+});
+editAnnualizedData.addEventListener("click", () => {
+  annualizedDataBackup = Object.fromEntries(getAnnualizedFields().map((field) => [field.id, field.value]));
+  setAnnualizedDataMode(true, true);
+});
+cancelAnnualizedData.addEventListener("click", () => {
+  if (annualizedDataBackup) {
+    getAnnualizedFields().forEach((field) => {
+      field.value = annualizedDataBackup[field.id] ?? field.defaultValue;
+    });
+  }
+  annualizedDataBackup = null;
+  if (annualizedDataSaved) {
+    setAnnualizedDataMode(true, false);
+  } else {
+    annualizedSalesYear.value = "2025";
+    annualizedCurrency.value = "Soles";
+    annualizedAmount.value = "";
+    annualizedIncomeType.value = "";
+    setAnnualizedDataMode(false, false);
+  }
+  updateSolicitationAccordionStatuses();
+});
+saveAnnualizedData.addEventListener("click", () => {
+  if (!validateAnnualizedData()) return;
+  annualizedAmount.value = parseMoney(annualizedAmount.value).toFixed(2);
+  annualizedDataBackup = null;
+  setAnnualizedDataMode(true, false);
   currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
   updateSolicitationAccordionStatuses();
 });
@@ -3462,6 +3562,10 @@ annualizedAmount.addEventListener("blur", () => {
   updateSolicitationAccordionStatuses();
 });
 annualizedAmount.addEventListener("input", sanitizeTwoDecimalInput);
+[annualizedSalesYear, annualizedCurrency, annualizedAmount, annualizedIncomeType].forEach((field) => {
+  field.addEventListener("input", beginAnnualizedDataChanges);
+  field.addEventListener("change", beginAnnualizedDataChanges);
+});
 calculationView.addEventListener("input", handleFinancingDataChange);
 calculationView.addEventListener("change", handleFinancingDataChange);
 calculationPhone.addEventListener("input", formatPhoneInput);
