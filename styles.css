@@ -1333,9 +1333,7 @@ td {
 }
 
 .annualized-section {
-  margin-top: 20px;
-  padding-top: 18px;
-  border-top: 1px solid #e1e7f0;
+  margin-top: 16px;
 }
 
 .annualized-section[hidden] {
