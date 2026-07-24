@@ -182,18 +182,20 @@ const holderAddressReference = document.querySelector("#holderAddressReference")
 const addressValidationStatus = document.querySelector("#addressValidationStatus");
 const validateAddressButton = document.querySelector("#validateAddressButton");
 const editHolderAddress = document.querySelector("#editHolderAddress");
-const cancelHolderAddress = document.querySelector("#cancelHolderAddress");
-const saveHolderAddress = document.querySelector("#saveHolderAddress");
 const employmentCategory = document.querySelector("#employmentCategory");
 const employerRuc = document.querySelector("#employerRuc");
 const workplaceName = document.querySelector("#workplaceName");
 const workplaceAddress = document.querySelector("#workplaceAddress");
 const employmentActivity = document.querySelector("#employmentActivity");
 const employmentPosition = document.querySelector("#employmentPosition");
-const employmentPositionLabel = document.querySelector("#employmentPositionLabel");
 const employmentStartDate = document.querySelector("#employmentStartDate");
 const employmentCurrency = document.querySelector("#employmentCurrency");
 const monthlyNetIncome = document.querySelector("#monthlyNetIncome");
+const annualizedSection = document.querySelector("#annualizedSection");
+const annualizedSalesYear = document.querySelector("#annualizedSalesYear");
+const annualizedCurrency = document.querySelector("#annualizedCurrency");
+const annualizedAmount = document.querySelector("#annualizedAmount");
+const annualizedIncomeType = document.querySelector("#annualizedIncomeType");
 const editHolderEmployment = document.querySelector("#editHolderEmployment");
 const cancelHolderEmployment = document.querySelector("#cancelHolderEmployment");
 const saveHolderEmployment = document.querySelector("#saveHolderEmployment");
@@ -1168,14 +1170,25 @@ function saveIncomeDraft() {
 function cancelIncomeDraft() {
   holderIncomes = [emptyIncome()];
   spouseIncomes = currentGeneratedRequest?.hasSpouse ? [emptyIncome()] : [];
-  savedHolderIncomes = cloneIncomeList(holderIncomes);
-  savedSpouseIncomes = cloneIncomeList(spouseIncomes);
   holderPrimaryIncomeLoaded = true;
   spousePrimaryIncomeLoaded = Boolean(currentGeneratedRequest?.hasSpouse && jointIncome.checked);
+  holderPrimaryEditing = false;
+  holderPrimaryBackup = null;
+  savedHolderIncomes = cloneIncomeList(holderIncomes);
+  savedSpouseIncomes = cloneIncomeList(spouseIncomes);
   setIncomeChangesPending(false);
   renderIncomeRows();
   commitDeclaredIncomeTotal();
   incomeSaveMessage.textContent = "";
+  incomeDetailPanel.querySelectorAll(".has-error").forEach((field) => {
+    field.classList.remove("has-error");
+    field.setAttribute("aria-invalid", "false");
+  });
+  if (currentGeneratedRequest) {
+    currentGeneratedRequest.holderIncomes = cloneIncomeList(savedHolderIncomes);
+    currentGeneratedRequest.spouseIncomes = cloneIncomeList(savedSpouseIncomes);
+  }
+  updateCalculateAvailability();
   invalidateFinancingResults();
 }
 
@@ -1301,6 +1314,10 @@ function captureSolicitationDetails() {
     employmentStartDate: employmentStartDate.value,
     employmentCurrency: employmentCurrency.value,
     monthlyNetIncome: monthlyNetIncome.value,
+    annualizedSalesYear: annualizedSalesYear.value,
+    annualizedCurrency: annualizedCurrency.value,
+    annualizedAmount: annualizedAmount.value,
+    annualizedIncomeType: annualizedIncomeType.value,
     spouseCivilStatus: spouseCivilStatus.value,
     spouseBirthCountry: spouseBirthCountry.value,
     spouseResidenceCountry: spouseResidenceCountry.value,
@@ -1465,7 +1482,7 @@ function applyReadOnlyWorkflowMode() {
     validateAddressButton, editHolderPersonal, cancelHolderPersonal, saveHolderPersonal,
     editHolderContact, cancelHolderContact, saveHolderContact, editSpousePersonal,
     cancelSpousePersonal, saveSpousePersonal, editSpouseContact, cancelSpouseContact,
-    saveSpouseContact, editHolderAddress, cancelHolderAddress, saveHolderAddress,
+    saveSpouseContact, editHolderAddress,
     editHolderEmployment, cancelHolderEmployment, saveHolderEmployment,
     editVehicleData, cancelVehicleData, saveVehicleData,
     cancelSolicitationComment, saveSolicitationComment]
@@ -1689,10 +1706,14 @@ function populateSolicitationScreen() {
   workplaceAddress.value = details.workplaceAddress || "";
   employmentActivity.value = details.employmentActivity || "";
   employmentPosition.value = details.employmentPosition || "";
-  syncEmploymentPositionLabel();
   employmentStartDate.value = details.employmentStartDate || "";
   employmentCurrency.value = details.employmentCurrency || "Soles (S/)";
   monthlyNetIncome.value = details.monthlyNetIncome || "";
+  annualizedSalesYear.value = details.annualizedSalesYear || "2025";
+  annualizedCurrency.value = details.annualizedCurrency || "Soles";
+  annualizedAmount.value = details.annualizedAmount || "";
+  annualizedIncomeType.value = details.annualizedIncomeType || "";
+  syncAnnualizedSection();
   editHolderContact.disabled = false;
   solicitationSpouseAccordion.hidden = !currentGeneratedRequest.hasSpouse;
   currentGeneratedRequest.spousePerson ||= { ...defaultSpousePerson };
@@ -2115,15 +2136,29 @@ function renderRequiredDocumentUploads() {
   const portfolio = resultPortfolio.textContent;
   const readOnly = isWorkflowReadOnly();
   const documentNames = Array.from(resultDocuments.querySelectorAll("li"), (item) => item.textContent.trim())
-    .filter((name) => name && name !== "–");
+    .filter((name) => name && name !== "–" && normalize(name) !== "otros");
+  const documentItems = [
+    ...documentNames.map((name, index) => ({
+      name,
+      key: `document-${index}`,
+      required: true,
+      maxFiles: 2,
+    })),
+    {
+      name: "Otros",
+      key: "document-others",
+      required: false,
+      maxFiles: 5,
+    },
+  ];
   const uploads = currentGeneratedRequest.documentUploads || {};
 
   documentsPortfolioBadge.textContent = portfolio;
   documentsPortfolioBadge.classList.toggle("full", portfolio === "FULL");
   requiredDocumentUploads.replaceChildren();
 
-  documentNames.forEach((documentName, index) => {
-    const key = `document-${index}`;
+  documentItems.forEach((documentItem, index) => {
+    const { name: documentName, key, required, maxFiles } = documentItem;
     const files = uploads[key] || [];
     const item = document.createElement("details");
     item.className = "document-upload-item";
@@ -2133,25 +2168,32 @@ function renderRequiredDocumentUploads() {
     const title = document.createElement("strong");
     title.textContent = documentName;
     const status = document.createElement("span");
-    status.className = files.length ? "document-status ready" : "document-status";
-    status.textContent = files.length ? `${files.length} PDF${files.length === 1 ? "" : "s"}` : "Obligatorio: falta 1 PDF";
+    status.className = files.length || !required ? "document-status ready" : "document-status";
+    status.textContent = files.length
+      ? `${files.length} PDF${files.length === 1 ? "" : "s"}`
+      : (required ? "Obligatorio: falta 1 PDF" : "Opcional");
     summary.append(title, status);
 
     const body = document.createElement("div");
     body.className = "document-upload-body";
     const help = document.createElement("p");
-    help.textContent = "Formato permitido: PDF. Debes adjuntar como mínimo 1 y como máximo 2 archivos.";
+    help.textContent = required
+      ? "Formato permitido: PDF. Debes adjuntar como mínimo 1 y como máximo 2 archivos."
+      : "Formato permitido: PDF. Puedes adjuntar como máximo 5 archivos de manera opcional.";
     const inputLabel = document.createElement("label");
     inputLabel.className = "document-file-picker";
-    inputLabel.textContent = readOnly ? "Documentos en modo consulta" : (files.length >= 2 ? "Límite de 2 archivos alcanzado" : "＋ Seleccionar archivos");
+    inputLabel.textContent = readOnly
+      ? "Documentos en modo consulta"
+      : (files.length >= maxFiles ? `Límite de ${maxFiles} archivos alcanzado` : "＋ Seleccionar archivos");
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".pdf,application/pdf";
     input.multiple = true;
-    input.required = files.length === 0;
-    input.disabled = readOnly || files.length >= 2;
+    input.required = required && files.length === 0;
+    input.disabled = readOnly || files.length >= maxFiles;
     input.dataset.documentKey = key;
     input.dataset.documentName = documentName;
+    input.dataset.maxFiles = String(maxFiles);
     inputLabel.append(input);
 
     const list = document.createElement("div");
@@ -2182,6 +2224,7 @@ function handleDocumentUpload(event) {
   const input = event.target.closest("input[type='file'][data-document-key]");
   if (!input) return;
   const key = input.dataset.documentKey;
+  const maxFiles = Number(input.dataset.maxFiles || 2);
   const existing = currentGeneratedRequest.documentUploads?.[key] || [];
   const selectedFiles = Array.from(input.files);
   const invalidFile = selectedFiles.find((file) => file.type !== "application/pdf" && !file.name.toLocaleLowerCase("es").endsWith(".pdf"));
@@ -2192,9 +2235,9 @@ function handleDocumentUpload(event) {
     return;
   }
   const selected = selectedFiles.map((file) => file.name);
-  if (existing.length + selected.length > 2) {
+  if (existing.length + selected.length > maxFiles) {
     const error = requiredDocumentUploads.querySelector(`[data-document-error="${key}"]`);
-    error.textContent = "Solo puedes adjuntar un máximo de 2 archivos en este ítem.";
+    error.textContent = `Solo puedes adjuntar un máximo de ${maxFiles} archivos en este ítem.`;
     input.value = "";
     return;
   }
@@ -2303,21 +2346,32 @@ function getAddressEditFields() {
 }
 
 function getEmploymentEditFields() {
-  return [employmentCategory, employerRuc, workplaceName, workplaceAddress, employmentActivity,
+  const fields = [employmentCategory, employerRuc, workplaceName, workplaceAddress, employmentActivity,
     employmentPosition, employmentStartDate, employmentCurrency, monthlyNetIncome];
+  if (!annualizedSection.hidden) {
+    fields.push(annualizedSalesYear, annualizedCurrency, annualizedAmount, annualizedIncomeType);
+  }
+  return fields;
 }
 
 function employmentFieldsComplete() {
   const requiredFields = [employmentCategory, workplaceName, workplaceAddress, employmentActivity,
     employmentPosition, employmentStartDate, employmentCurrency, monthlyNetIncome];
+  if (!annualizedSection.hidden) {
+    requiredFields.push(annualizedSalesYear, annualizedCurrency, annualizedAmount, annualizedIncomeType);
+  }
   return solicitationFieldsComplete(requiredFields)
     && parseMoney(monthlyNetIncome.value) > 0
+    && (annualizedSection.hidden || Number(annualizedAmount.value) > 0)
     && (employerRuc.value === "" || employerRuc.checkValidity());
 }
 
 function validateEmploymentEditFields() {
   const requiredFields = [employmentCategory, workplaceName, workplaceAddress, employmentActivity,
     employmentPosition, employmentStartDate, employmentCurrency, monthlyNetIncome];
+  if (!annualizedSection.hidden) {
+    requiredFields.push(annualizedSalesYear, annualizedCurrency, annualizedAmount, annualizedIncomeType);
+  }
   const requiredValid = validateSolicitationEditFields(requiredFields);
   const monthlyValid = parseMoney(monthlyNetIncome.value) > 0;
   monthlyNetIncome.classList.toggle("has-error", !monthlyValid);
@@ -2327,7 +2381,25 @@ function validateEmploymentEditFields() {
   employerRuc.setAttribute("aria-invalid", String(!rucValid));
   if (requiredValid && !monthlyValid) monthlyNetIncome.focus();
   else if (requiredValid && monthlyValid && !rucValid) employerRuc.focus();
-  return requiredValid && monthlyValid && rucValid;
+  const annualizedAmountValid = annualizedSection.hidden || Number(annualizedAmount.value) > 0;
+  annualizedAmount.classList.toggle("has-error", !annualizedAmountValid);
+  annualizedAmount.setAttribute("aria-invalid", String(!annualizedAmountValid));
+  if (requiredValid && monthlyValid && rucValid && !annualizedAmountValid) annualizedAmount.focus();
+  return requiredValid && monthlyValid && rucValid && annualizedAmountValid;
+}
+
+function holderRequiresAnnualizedData() {
+  const incomeList = currentGeneratedRequest?.holderIncomes?.length
+    ? currentGeneratedRequest.holderIncomes
+    : savedHolderIncomes;
+  return incomeList.some((income) => {
+    const category = normalize(income.category || "");
+    return category === "3ra categoria" || category === "sin categoria";
+  });
+}
+
+function syncAnnualizedSection() {
+  annualizedSection.hidden = !holderRequiresAnnualizedData();
 }
 
 function getVehicleEditFields() {
@@ -2353,7 +2425,15 @@ function setAddressEditing(editing, restore = false) {
     addressValidationStatus.textContent = currentGeneratedRequest.addressValidated ? "Validada" : "Por confirmar";
     addressValidationStatus.classList.toggle("validated", currentGeneratedRequest.addressValidated);
   }
-  const effectiveEditing = updateSolicitationEditActions(fields, editing, editHolderAddress, cancelHolderAddress, saveHolderAddress);
+  const effectiveEditing = editing || !solicitationFieldsComplete(fields);
+  fields.forEach((field) => {
+    field.disabled = !effectiveEditing;
+    if (!effectiveEditing) {
+      field.classList.remove("has-error");
+      field.setAttribute("aria-invalid", "false");
+    }
+  });
+  editHolderAddress.hidden = effectiveEditing;
   if (effectiveEditing && !currentGeneratedRequest[backupKey]) {
     currentGeneratedRequest[backupKey] = {
       ...Object.fromEntries(fields.map((field) => [field.id, field.value])),
@@ -2361,7 +2441,7 @@ function setAddressEditing(editing, restore = false) {
     };
   }
   if (!effectiveEditing) currentGeneratedRequest[backupKey] = null;
-  validateAddressButton.disabled = effectiveEditing || !solicitationFieldsComplete(fields);
+  validateAddressButton.disabled = !solicitationFieldsComplete(fields);
 }
 
 function setEmploymentEditing(editing, restore = false) {
@@ -2422,13 +2502,17 @@ function updateSolicitationAccordionStatuses() {
     employmentCurrency,
     monthlyNetIncome,
   ];
+  if (!annualizedSection.hidden) {
+    requiredHolderFields.push(annualizedSalesYear, annualizedCurrency, annualizedAmount, annualizedIncomeType);
+  }
   const complete = requiredHolderFields.every((field) => field.value.trim() !== "" && field.checkValidity())
     && parseMoney(monthlyNetIncome.value) > 0
+    && (annualizedSection.hidden || Number(annualizedAmount.value) > 0)
     && (employerRuc.value === "" || employerRuc.checkValidity());
   const addressFields = [holderPropertyType, holderAddressYears, holderAddressMonths, holderDepartment,
     holderProvince, holderDistrict, holderAddress, holderAddressReference];
   const addressComplete = addressFields.every((field) => field.value.trim() !== "" && field.checkValidity());
-  validateAddressButton.disabled = !addressComplete || !saveHolderAddress.hidden;
+  validateAddressButton.disabled = !addressComplete;
   holderAccordionStatus.textContent = complete ? "Completo" : "Sin completar";
   holderAccordionStatus.classList.toggle("complete", complete);
 
@@ -2628,12 +2712,6 @@ function syncDoubleInstallmentFields() {
   doubleInstallmentMonthsField.hidden = doubleInstallments.value !== "Si";
 }
 
-function syncEmploymentPositionLabel() {
-  employmentPositionLabel.textContent = employmentCategory.value === "Independiente"
-    ? "Situación laboral"
-    : "Cargo";
-}
-
 function syncVehicleOwnershipOptions(selectedValue = vehicleOwnership.value) {
   const hasSpouse = Boolean(currentGeneratedRequest?.hasSpouse);
   const jointOwnershipValue = "Titular + Conyugue";
@@ -2731,6 +2809,7 @@ function confirmHolderAddress() {
   const hasAddressAlert = Boolean(currentGeneratedRequest?.person?.addressAlert);
   currentGeneratedRequest.addressValidated = true;
   currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
+  setAddressEditing(false);
   addressValidationStatus.textContent = "Validada";
   addressValidationStatus.classList.add("validated");
   addressMapModal.hidden = true;
@@ -3258,21 +3337,9 @@ saveSpouseContact.addEventListener("click", () => {
 });
 spousePhone.addEventListener("input", formatPhoneInput);
 editHolderAddress.addEventListener("click", () => setAddressEditing(true));
-cancelHolderAddress.addEventListener("click", () => {
-  setAddressEditing(false, true);
-  updateSolicitationAccordionStatuses();
-});
-saveHolderAddress.addEventListener("click", () => {
-  const fields = getAddressEditFields();
-  if (!validateSolicitationEditFields(fields)) return;
-  setAddressEditing(false);
-  currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
-  updateSolicitationAccordionStatuses();
-});
 editHolderEmployment.addEventListener("click", () => setEmploymentEditing(true));
 cancelHolderEmployment.addEventListener("click", () => {
   setEmploymentEditing(false, true);
-  syncEmploymentPositionLabel();
   updateSolicitationAccordionStatuses();
 });
 saveHolderEmployment.addEventListener("click", () => {
@@ -3293,7 +3360,6 @@ saveVehicleData.addEventListener("click", () => {
   currentGeneratedRequest.solicitationDetails = captureSolicitationDetails();
   updateSolicitationAccordionStatuses();
 });
-employmentCategory.addEventListener("change", syncEmploymentPositionLabel);
 vehicleOwnership.addEventListener("change", () => {
   syncThirdPartyOwnershipFields();
   updateSolicitationAccordionStatuses();
@@ -3389,6 +3455,13 @@ monthlyNetIncome.addEventListener("input", sanitizeTwoDecimalInput);
 monthlyNetIncome.addEventListener("focus", unformatMonthlyNetIncome);
 monthlyNetIncome.addEventListener("blur", formatMonthlyNetIncome);
 monthlyNetIncome.addEventListener("keydown", blurOnEnter);
+annualizedAmount.addEventListener("blur", () => {
+  if (annualizedAmount.value !== "") {
+    annualizedAmount.value = parseMoney(annualizedAmount.value).toFixed(2);
+  }
+  updateSolicitationAccordionStatuses();
+});
+annualizedAmount.addEventListener("input", sanitizeTwoDecimalInput);
 calculationView.addEventListener("input", handleFinancingDataChange);
 calculationView.addEventListener("change", handleFinancingDataChange);
 calculationPhone.addEventListener("input", formatPhoneInput);

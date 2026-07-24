@@ -490,7 +490,7 @@
             <label>Tipo de seguro vehicular<select id="vehicleInsuranceType"><option value="con_seguro">Con Seguro</option><option value="endosado">Endosado</option></select></label>
             <label id="annualVehicleInsuranceField">Porcentaje anual de seguro vehicular (%)<input id="annualVehicleInsurancePercentage" inputmode="decimal" placeholder="00.00 %"></label>
             <label>Seguro de desgravamen<select id="creditLifeInsurance"><option value="con_seguro">Con seguro</option><option value="endosado">Endosado</option><option value="sin_seguro">Sin seguro</option></select></label>
-            <label id="creditLifeInsuranceTypeField">Tipo de seguro desgravamen<select id="creditLifeInsuranceType"><option>Individual</option><option>Devolución</option><option>Con asistencia</option></select></label>
+            <label id="creditLifeInsuranceTypeField">Tipo de seguro desgravamen<select id="creditLifeInsuranceType"><option>Individual</option><option>Devolución</option><option>Con asistencia médica</option></select></label>
           </div>
         </section>
 
@@ -504,7 +504,7 @@
         </section>
 
         <section class="calculation-section">
-          <h3>Gastos</h3>
+          <h3>Gastos financiables</h3>
           <div class="calculation-grid">
             <label>Gastos registrales<select id="registrationExpenses"><option>Si</option><option>No</option></select></label>
             <label>Gastos notariales<select id="notarialExpenses"><option>Si</option><option>No</option></select></label>
@@ -560,7 +560,6 @@
 
         <div class="calculation-footer-grid">
           <label>N° de teléfono<input id="calculationPhone" type="tel" inputmode="numeric" maxlength="9" pattern="9[0-9]{8}" placeholder="Ingrese teléfono"></label>
-          <label id="newPreapprovedAmountField" class="new-preapproved-amount-field" hidden>Nuevo monto preaprobado<input id="newPreapprovedAmount" readonly></label>
           <label>Monto a financiar<input id="amountToFinance" placeholder="S/ 0.00" readonly></label>
           <label class="day-payment-field">Día de pago<select id="paymentDay" disabled><option value="" selected>Seleccionar</option><option>02</option><option>05</option><option>10</option><option>15</option><option>20</option><option>25</option></select><button id="simulateButton" class="confirm-button simulate-button" type="button" hidden disabled>Simular</button></label>
         </div>
@@ -568,6 +567,9 @@
         <section id="calculationResultCard" class="calculation-result-card" hidden>
           <div class="calculation-result-heading">
             <div><h2>Resultado del cálculo</h2><p>Selecciona una fila de la grilla para continuar con la solicitud.</p></div>
+          </div>
+          <div class="calculation-result-preapproved">
+            <label id="newPreapprovedAmountField" class="new-preapproved-amount-field" hidden>Nuevo monto preaprobado<input id="newPreapprovedAmount" readonly></label>
           </div>
           <div class="calculation-result-table-wrap">
             <table class="calculation-result-table">
@@ -633,14 +635,14 @@
                 </dl>
               </section>
               <section class="holder-information-card">
-                <header><h3><span aria-hidden="true">⌕</span> Datos de contacto</h3><div class="holder-edit-actions"><button id="editHolderContact" type="button">✎&nbsp; Editar</button><button id="cancelHolderContact" type="button" hidden>Cancelar</button><button id="saveHolderContact" type="button" hidden>Guardar</button></div></header>
+                <header><h3><span aria-hidden="true">⌕</span> Datos de contacto titular</h3><div class="holder-edit-actions"><button id="editHolderContact" type="button">✎&nbsp; Editar</button><button id="cancelHolderContact" type="button" hidden>Cancelar</button><button id="saveHolderContact" type="button" hidden>Guardar</button></div></header>
                 <dl class="holder-data-grid contact-grid">
                   <div><dt>Teléfono</dt><dd><input id="holderPhone" type="tel" inputmode="numeric" maxlength="9" pattern="9[0-9]{8}" placeholder="Ingrese teléfono" disabled></dd></div>
                   <div><dt>Correo electrónico</dt><dd><input id="holderEmail" type="email" placeholder="Ingrese correo electrónico" disabled></dd></div>
                 </dl>
               </section>
               <section class="holder-information-card address-card">
-                <header><h3><span aria-hidden="true">⌂</span> Dirección domiciliaria <mark id="addressValidationStatus">Por confirmar</mark></h3><div class="section-header-actions"><div class="holder-edit-actions"><button id="editHolderAddress" type="button">✎&nbsp; Editar</button><button id="cancelHolderAddress" type="button" hidden>Cancelar</button><button id="saveHolderAddress" type="button" hidden>Guardar</button></div><button id="validateAddressButton" type="button" disabled>Validar</button></div></header>
+                <header><h3><span aria-hidden="true">⌂</span> Dirección domiciliaria <mark id="addressValidationStatus">Por confirmar</mark></h3><div class="section-header-actions"><div class="holder-edit-actions"><button id="editHolderAddress" type="button">✎&nbsp; Editar</button></div><button id="validateAddressButton" type="button" disabled>Validar</button></div></header>
                 <dl class="holder-data-grid">
                   <div><dt>Tipo de propiedad</dt><dd><select id="holderPropertyType"><option value="" selected>Seleccionar</option><option>Propia</option><option>Alquilada</option><option>Familiar</option></select></dd></div>
                   <div><dt>Antigüedad domiciliaria</dt><dd class="address-age"><input id="holderAddressYears" type="number" min="0" placeholder="Años"><input id="holderAddressMonths" type="number" min="0" max="11" placeholder="Meses"></dd></div>
@@ -659,11 +661,40 @@
                   <div><dt>Nombre centro de laboral</dt><dd><input id="workplaceName" placeholder="Ingrese nombre centro laboral"></dd></div>
                   <div><dt>Dirección</dt><dd><input id="workplaceAddress" placeholder="Ingrese dirección"></dd></div>
                   <div><dt>Giro o actividad</dt><dd><select id="employmentActivity"><option value="" selected>Seleccionar</option><option>Comercio</option><option>Servicios</option><option>Manufactura</option></select></dd></div>
-                  <div><dt id="employmentPositionLabel">Cargo</dt><dd><select id="employmentPosition"><option value="" selected>Seleccionar</option><option>Empleado</option><option>Gerente</option><option>Subgerente</option><option>Operario</option></select></dd></div>
+                  <div><dt>Cargo</dt><dd><select id="employmentPosition"><option value="" selected>Seleccionar</option><option>Empleado</option><option>Gerente</option><option>Subgerente</option><option>Operario</option></select></dd></div>
                   <div><dt>Fecha ingreso laboral</dt><dd><input id="employmentStartDate" type="date"></dd></div>
                   <div><dt>Tipo moneda ingreso</dt><dd><select id="employmentCurrency"><option value="Soles (S/)" selected>Soles (S/)</option></select></dd></div>
                   <div><dt>Ingresos netos mensuales</dt><dd><input id="monthlyNetIncome" inputmode="decimal" placeholder="S/ 0.00"></dd></div>
                 </dl>
+                <section id="annualizedSection" class="annualized-section" hidden>
+                  <h4>Anualizado</h4>
+                  <div class="annualized-grid">
+                    <label>Ventas anualizadas
+                      <select id="annualizedSalesYear">
+                        <option selected>2025</option>
+                        <option>2024</option>
+                      </select>
+                    </label>
+                    <label>Moneda
+                      <select id="annualizedCurrency">
+                        <option selected>Soles</option>
+                        <option>Dólares</option>
+                      </select>
+                    </label>
+                    <label>Monto anual
+                      <input id="annualizedAmount" type="text" inputmode="decimal" placeholder="0.00">
+                    </label>
+                    <label>Tipo de ingreso o venta
+                      <select id="annualizedIncomeType">
+                        <option value="" selected>Seleccionar</option>
+                        <option>Declaración SUNAT</option>
+                        <option>Estados Financieros auditados</option>
+                        <option>Estados Financieros no auditados</option>
+                        <option>Metodología Interna</option>
+                      </select>
+                    </label>
+                  </div>
+                </section>
               </section>
             </div>
           </article>
@@ -692,7 +723,7 @@
                 </dl>
               </section>
               <section class="holder-information-card">
-                <header><h3><span aria-hidden="true">⌕</span> Datos de contacto</h3><div class="holder-edit-actions"><button id="editSpouseContact" type="button">✎&nbsp; Editar</button><button id="cancelSpouseContact" type="button" hidden>Cancelar</button><button id="saveSpouseContact" type="button" hidden>Guardar</button></div></header>
+                <header><h3><span aria-hidden="true">⌕</span> Datos de contacto conyugue</h3><div class="holder-edit-actions"><button id="editSpouseContact" type="button">✎&nbsp; Editar</button><button id="cancelSpouseContact" type="button" hidden>Cancelar</button><button id="saveSpouseContact" type="button" hidden>Guardar</button></div></header>
                 <dl class="holder-data-grid contact-grid">
                   <div><dt>Teléfono</dt><dd><input id="spousePhone" type="tel" inputmode="numeric" maxlength="9" pattern="9[0-9]{8}" placeholder="Ingrese teléfono" disabled></dd></div>
                   <div><dt>Correo electrónico</dt><dd><input id="spouseEmail" type="email" placeholder="Ingrese correo electrónico" disabled></dd></div>

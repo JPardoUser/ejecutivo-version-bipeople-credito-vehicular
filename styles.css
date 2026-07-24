@@ -1302,15 +1302,83 @@ td {
   color: #174399;
 }
 
-.calculation-footer-grid .new-preapproved-amount-field {
-  color: #087a43;
+.calculation-result-preapproved {
+  display: grid;
+  grid-template-columns: minmax(240px, 340px);
+  padding: 0 26px 18px;
 }
 
-.calculation-footer-grid .new-preapproved-amount-field input[readonly] {
-  border-color: #78d6a5;
+.calculation-result-preapproved .new-preapproved-amount-field {
+  display: grid;
+  color: #087a43;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 7px;
+}
+
+.calculation-result-preapproved .new-preapproved-amount-field[hidden] {
+  display: none;
+}
+
+.calculation-result-preapproved .new-preapproved-amount-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid #78d6a5;
+  border-radius: 8px;
   background: #ecfbf3;
   color: #087a43;
+  font: inherit;
   font-weight: 800;
+}
+
+.annualized-section {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #e1e7f0;
+}
+
+.annualized-section[hidden] {
+  display: none;
+}
+
+.annualized-section h4 {
+  margin: 0 0 16px;
+  color: var(--bank-blue);
+  font-size: 14px;
+}
+
+.annualized-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.annualized-grid label {
+  display: grid;
+  color: #17223a;
+  font-size: 11px;
+  font-weight: 750;
+  gap: 7px;
+}
+
+.annualized-grid input,
+.annualized-grid select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d6deea;
+  border-radius: 7px;
+  background: #fff;
+  color: #18243a;
+  font: inherit;
+}
+
+.annualized-grid input:disabled,
+.annualized-grid select:disabled {
+  background: #eef3fb;
+  color: #526078;
+  opacity: 1;
 }
 
 .calculation-grid input:focus,
@@ -2188,13 +2256,6 @@ td {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.section-header-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 14px;
 }
 
 .holder-edit-actions button:last-child:not([hidden]) {
@@ -3494,7 +3555,7 @@ td {
   min-width: 110px;
 }
 
-@media (min-width: 1700px) {
+@media (min-width: 1370px) {
   .filter-grid {
     grid-template-columns:
       minmax(150px, 1.12fr)
@@ -3516,12 +3577,9 @@ td {
 
   .calculation-grid,
   .calculation-grid.three-columns,
+  .calculation-footer-grid,
   .vehicle-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .calculation-footer-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .income-grid {
@@ -3538,14 +3596,6 @@ td {
 }
 
 @media (max-width: 950px) {
-  .app-header,
-  .page-shell,
-  .simulation-view,
-  .result-view,
-  .solicitation-view {
-    width: 100%;
-  }
-
   .vehicle-data-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3693,15 +3743,6 @@ td {
 
   .simulation-card {
     padding: 22px 16px;
-  }
-
-  .manual-person-heading {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .manual-person-actions {
-    justify-content: flex-end;
   }
 
   .simulation-selects,
@@ -4001,30 +4042,17 @@ td {
 }
 .workflow-observation-item.danger > span { background: #d93649; }
 .workflow-observation-item.info {
-  border-color: #8eb9ee;
-  background: #eef6ff;
-  color: #14589b;
+  border-color: #8fc5eb;
+  background: #eef8ff;
+  color: #17618f;
 }
-.workflow-observation-item.info > span { background: #2377c9; }
+.workflow-observation-item.info > span { background: #2c83bd; }
 .workflow-observation-item.critical {
-  border-color: #b6a4e8;
-  background: #f5f1ff;
-  color: #5c3ca1;
+  border-color: #bba4df;
+  background: #f7f1ff;
+  color: #66409a;
 }
-.workflow-observation-item.critical > span { background: #7352bd; }
-
-.address-validation-success.has-address-observation .address-valid-icon {
-  background: #fff2d8;
-  color: #d47a00;
-}
-
-.address-validation-success.has-address-observation h2 {
-  color: #9a5700;
-}
-
-#addressValidationResultMessage {
-  white-space: pre-line;
-}
+.workflow-observation-item.critical > span { background: #7650b3; }
 
 .compliance-subject.has-plaft-alert strong,
 .compliance-subject.has-plaft-alert small {
@@ -4033,12 +4061,4 @@ td {
 
 @media (max-width: 720px) {
   .workflow-observations-list { display: grid; }
-
-  .income-form-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .income-form-actions p {
-    grid-column: 1 / -1;
-  }
 }
